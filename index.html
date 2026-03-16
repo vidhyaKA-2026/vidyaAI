@@ -594,6 +594,7 @@ input::placeholder{color:#a8a29e}
       </div>
     </div>
     <div class="tb-actions">
+      <span id="reqBadge" style="font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;white-space:nowrap;display:none"></span>
       <button class="tbbtn" id="speakToggleBtn" onclick="toggleAutoSpeak()" title="Toggle AI voice">🔊</button>
       <button class="tbbtn" onclick="goToStep(3)">⚙️</button>
       <button class="tbbtn danger" onclick="exitApp()">✕</button>
@@ -634,7 +635,7 @@ input::placeholder{color:#a8a29e}
           <button onclick="clearUpload()">✕</button>
         </div>
       </div>
-      <div class="input-note">⚡ Gemini 1.5 Flash · DSERT SSLC 2025-26 · <span id="reqCount"></span></div>
+      <div class="input-note">⚡ Gemini 2.5 Flash · DSERT SSLC 2025-26 · <span id="reqCount"></span></div>
     </div>
   </div>
   <div class="tab-panel" id="panel-ref">
@@ -716,21 +717,73 @@ function getCurrentKey(){ return KEYS[_keyIndex]; }
 let GEM_KEY=getCurrentKey(), STU_NAME='', SUBJECT='', MODE='tutor';
 
 // ── MODEL & RATE LIMITING ─────────────────────────────────────────
-const CURRENT_MODEL = 'gemini-1.5-flash'; // switch to 'gemini-1.5-flash' to enable per-user limit
+const CURRENT_MODEL = 'gemini-2.5-flash'; // switch to 'gemini-2.5-flash' to enable per-user limit
 const USER_DAILY_LIMIT = 20;
 
-function getRateLimitKey(){ const d=new Date().toISOString().slice(0,10); return 'vidya_req_'+(STU_NAME||'u')+'_'+d; }
-function getUserRequestCount(){ try{return parseInt(localStorage.getItem(getRateLimitKey())||'0');}catch(e){return 0;} }
-function incrementUserRequestCount(){ try{const k=getRateLimitKey();const c=getUserRequestCount()+1;localStorage.setItem(k,c);return c;}catch(e){return 0;} }
+// Browser fingerprint — harder to bypass than name-based
+function getBrowserFingerprint(){
+  const parts = [
+    navigator.language || '',
+    navigator.platform || '',
+    screen.width + 'x' + screen.height,
+    screen.colorDepth || '',
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency || '',
+  ].join('|');
+  // Simple hash
+  let hash = 0;
+  for(let i=0;i<parts.length;i++){
+    hash = ((hash<<5)-hash) + parts.charCodeAt(i);
+    hash |= 0;
+  }
+  return 'fp_' + Math.abs(hash).toString(36);
+}
+
+let _fingerprint = null;
+function getFingerprint(){
+  if(!_fingerprint) _fingerprint = getBrowserFingerprint();
+  return _fingerprint;
+}
+
+function getRateLimitKey(){
+  const d = new Date().toISOString().slice(0,10);
+  return 'vidya_req_' + getFingerprint() + '_' + d;
+}
+function getUserRequestCount(){
+  try{ return parseInt(localStorage.getItem(getRateLimitKey())||'0'); }
+  catch(e){ return 0; }
+}
+function incrementUserRequestCount(){
+  try{
+    const k = getRateLimitKey();
+    const c = getUserRequestCount() + 1;
+    localStorage.setItem(k, c);
+    return c;
+  }catch(e){ return 0; }
+}
 function isGeminiModel(){ return CURRENT_MODEL.includes('gemini'); }
+function getRemainingRequests(){ return Math.max(0, USER_DAILY_LIMIT - getUserRequestCount()); }
+
 function checkRateLimit(){
   if(!isGeminiModel()) return true;
-  const count=getUserRequestCount();
-  if(count>=USER_DAILY_LIMIT){
-    addBubble('bot','⏰ You have used your '+USER_DAILY_LIMIT+' free questions for today! Come back tomorrow 😊\n\nSee you tomorrow, '+STU_NAME+'! 📚');
+  const count = getUserRequestCount();
+  if(count >= USER_DAILY_LIMIT){
+    addBubble('bot', '⏰ You have used all ' + USER_DAILY_LIMIT + ' free questions for today!\n\nCome back tomorrow for more 😊 Your learning streak continues! 📚');
+    updateRequestBadge();
     return false;
   }
   return true;
+}
+
+function updateRequestBadge(){
+  const el = document.getElementById('reqBadge');
+  if(!el || !isGeminiModel()) return;
+  const remaining = getRemainingRequests();
+  const used = getUserRequestCount();
+  el.textContent = remaining + '/' + USER_DAILY_LIMIT + ' left today';
+  el.style.background = remaining <= 5 ? '#fef2f2' : remaining <= 10 ? '#fffbeb' : '#f0fdf4';
+  el.style.color = remaining <= 5 ? '#dc2626' : remaining <= 10 ? '#d97706' : '#16a34a';
+  el.style.borderColor = remaining <= 5 ? '#fecaca' : remaining <= 10 ? '#fde68a' : '#bbf7d0';
 }
 
 // ── PER-USER DAILY LIMIT ─────────────────────────────────────────
@@ -1183,14 +1236,7 @@ async function sendMsg(){
   // Check per-user rate limit (only for Gemini models)
   if(!checkRateLimit()) return;
   incrementUserRequestCount();
-  // Show remaining requests for Gemini
-  if(isGeminiModel()){
-    const used = getUserRequestCount();
-    const left = USER_DAILY_LIMIT - used;
-    if(left <= 5 && left > 0){
-      setTimeout(()=>addBubble('bot', '💡 You have ' + left + ' free question' + (left===1?'':'s') + ' left today!'), 100);
-    }
-  }
+  updateRequestBadge();
 
   // Check daily limit
   if(isLimitReached()){

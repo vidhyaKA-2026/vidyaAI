@@ -343,9 +343,16 @@ input::placeholder{color:#a8a29e}
 
 .typing-row{display:flex;align-items:flex-end;gap:9px}
 .typing-bub{
-  display:flex;gap:5px;align-items:center;padding:12px 16px;
+  display:flex;flex-direction:column;gap:8px;padding:13px 17px;
   background:#fff;border:1.5px solid #e7e5e4;border-radius:18px 18px 18px 4px;
+  max-width:76%;box-shadow:0 2px 8px rgba(0,0,0,.07);
 }
+.typing-dots{display:flex;gap:5px;align-items:center}
+.typing-msg{
+  font-size:12.5px;color:#a8a29e;font-style:italic;
+  animation:fadeInMsg .4s ease;line-height:1.4;
+}
+@keyframes fadeInMsg{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .td{width:7px;height:7px;border-radius:50%;animation:tdb 1.1s infinite}
 .td:nth-child(1){background:#f97316;animation-delay:0ms}
 .td:nth-child(2){background:#f59e0b;animation-delay:160ms}
@@ -1229,14 +1236,18 @@ function updateSend(){
   document.getElementById('sendBtn').className=((v||hasFile)&&!loading)?'send-btn on':'send-btn off';
 }
 
-async function sendMsg(){
+let _lastUserMsg = null; // stores last message for quota retry
+
+async function sendMsg(retryMsg){
   const ta=document.getElementById('chatInput');
-  const txt=ta.value.trim();
-  if((!txt && !uploadedDataUrl)||loading)return;
+  const txt = retryMsg || ta.value.trim();
+  if((!txt && !uploadedDataUrl && !retryMsg)||loading)return;
   // Check per-user rate limit (only for Gemini models)
-  if(!checkRateLimit()) return;
-  incrementUserRequestCount();
-  updateRequestBadge();
+  if(!retryMsg){ // don't count retries
+    if(!checkRateLimit()) return;
+    incrementUserRequestCount();
+    updateRequestBadge();
+  }
 
   // Check daily limit
   if(isLimitReached()){
@@ -1249,7 +1260,8 @@ async function sendMsg(){
   const hasFile = !!uploadedDataUrl;
 
   // Show user message
-  addBubble('user', displayTxt + (hasFile ? '\n📎 [File attached]' : ''));
+  if(!retryMsg) _lastUserMsg = txt; // save for quota retry
+  if(!retryMsg) addBubble('user', displayTxt + (hasFile ? '\n📎 [File attached]' : ''));
 
   // Build parts for the API call
   const userParts = [];
@@ -1273,7 +1285,7 @@ async function sendMsg(){
     userParts.push({text:'I have uploaded a question paper / blueprint / study material. Please analyze it carefully for SSLC 2025-26 Class 10 Karnataka Board. Tell me:\n1. What type of document is this?\n2. What subjects/chapters does it cover?\n3. What are the key questions or marks distribution?\n4. How should I use this to study better?'});
   }
 
-  history.push({role:'user', parts:userParts});
+  if(!retryMsg) history.push({role:'user', parts:userParts});
 
   // Clear the file after attaching to message
   if(hasFile) clearUpload();
@@ -1310,18 +1322,25 @@ async function sendMsg(){
     }
   }catch(err){
     hideTyping(tid);
-    history.pop();
     const msg = err.message || '';
+    // Only pop history if NOT retrying (quota rotation retries)
+    const isQuotaErr = msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429');
+    if(!isQuotaErr) history.pop();
     let friendly = '';
     if(msg.includes('API_KEY_INVALID') || msg.includes('invalid') || msg.includes('API key'))
       friendly = "🔑 There's a problem with the app's API key. Please let your teacher know!";
     else if(msg.includes('leaked') || msg.includes('reported'))
       friendly = "🔑 The app's API key needs to be updated. Please inform your teacher!";
     else if(msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429')){
-      // Try rotating to next key
+      // Auto-rotate to next key and retry silently
       if(KEYS.length > 1){
         GEM_KEY = getNextKey();
-        addBubble('bot', '🔄 Switching to backup key, please resend your question…');
+        loading = false;
+        // Retry silently with saved message
+        if(_lastUserMsg){
+          setTimeout(() => sendMsg(_lastUserMsg), 800);
+        }
+        return;
       } else {
         friendly = "⏳ Too many requests right now! Please wait a minute and try again 😊";
       }
@@ -2001,15 +2020,105 @@ function formatMsg(txt,role){
 }
 
 let _tc=0;
+const THINKING_MSGS = {
+  Mathematics:[
+    '🔢 Crunching the numbers…',
+    '📐 Drawing the triangle in my head…',
+    '∑ Summing up the arithmetic progressions…',
+    '📊 Checking the KSEAB blueprint marks…',
+    '🧮 Applying Pythagoras theorem…',
+    '✏️ Working out the quadratic formula…',
+    '📈 Plotting the coordinate geometry…',
+    '🔍 Verifying with the mark scheme…',
+  ],
+  Science:[
+    '🔬 Running the experiment mentally…',
+    '⚡ Ohm\'s Law: V = IR… calculating…',
+    '🧬 Checking Mendel\'s pea plants…',
+    '🌡️ Balancing the chemical equation…',
+    '💡 Drawing the circuit diagram…',
+    '🔭 Reflecting on the mirror formula…',
+    '🌱 Thinking about life processes…',
+    '⚗️ Mixing the acids and bases…',
+  ],
+  'Social Science':[
+    '🗺️ Checking the historical timeline…',
+    '📜 Flipping through 1857 revolt notes…',
+    '🌍 Locating on the map of India…',
+    '🏛️ Consulting the Constitution…',
+    '⚔️ Remembering the Battle of Plassey…',
+    '📅 Checking the key dates…',
+    '🌾 Looking up the soil types…',
+    '🇮🇳 Tracing the Freedom Struggle…',
+  ],
+  English:[
+    '📖 Rereading the prose passage…',
+    '✍️ Finding the figure of speech…',
+    '🎭 Remembering the poem\'s theme…',
+    '📝 Checking grammar rules…',
+    '🖊️ Thinking about the RTC format…',
+    '📚 Flipping through the supplementary…',
+    '💭 Recalling A Wrong Man in Workers\' Paradise…',
+    '🔤 Parsing the question tag…',
+  ],
+  Hindi:[
+    '📖 पाठ याद कर रहा हूं…',
+    '✍️ व्याकरण जांच रहा हूं…',
+    '💭 पत्र लेखन का प्रारूप सोच रहा हूं…',
+    '📝 निबंध की रूपरेखा बना रहा हूं…',
+  ],
+  default:[
+    '🤔 Thinking hard for you…',
+    '📚 Checking the DSERT textbook…',
+    '🎯 Finding the best answer…',
+    '✨ Preparing a full-marks response…',
+    '🧠 Connecting the concepts…',
+    '📋 Checking the KSEAB blueprint…',
+    '💡 Almost there…',
+    '🌟 Making sure this is exam-ready…',
+  ]
+};
+
+let _typingTimers = {};
+
 function showTyping(){
-  const id='ty'+(++_tc);
-  const inner=document.getElementById('msgsInner');
-  const row=document.createElement('div');
-  row.id=id; row.className='typing-row';
-  row.innerHTML=`<div class="bot-av">🤖</div><div class="typing-bub"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
-  inner.appendChild(row); scrollChat(); return id;
+  const id = 'ty'+(++_tc);
+  const inner = document.getElementById('msgsInner');
+  const row = document.createElement('div');
+  row.id = id;
+  row.className = 'typing-row';
+
+  // Pick thinking messages for current subject
+  const msgs = THINKING_MSGS[SUBJECT] || THINKING_MSGS.default;
+  const startMsg = msgs[Math.floor(Math.random()*msgs.length)];
+
+  row.innerHTML = `<div class="bot-av">🤖</div><div class="typing-bub"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div><div class="typing-msg" id="tmsg_${id}">${startMsg}</div></div>`;
+  inner.appendChild(row);
+  scrollChat();
+
+  // Rotate through messages every 2.5s
+  let msgIdx = 0;
+  _typingTimers[id] = setInterval(()=>{
+    const el = document.getElementById('tmsg_'+id);
+    if(!el){ clearInterval(_typingTimers[id]); return; }
+    msgIdx = (msgIdx+1) % msgs.length;
+    el.style.animation = 'none';
+    el.offsetHeight; // reflow to restart animation
+    el.style.animation = '';
+    el.textContent = msgs[msgIdx];
+  }, 2500);
+
+  return id;
 }
-function hideTyping(id){const e=document.getElementById(id);if(e)e.remove();}
+function hideTyping(id){
+  // Clear rotating message timer
+  if(_typingTimers[id]){
+    clearInterval(_typingTimers[id]);
+    delete _typingTimers[id];
+  }
+  const e=document.getElementById(id);
+  if(e)e.remove();
+}
 function scrollChat(){const m=document.getElementById('chatMessages');m.scrollTop=m.scrollHeight;}
 function escHtml(t){
   return String(t)

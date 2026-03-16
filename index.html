@@ -412,42 +412,13 @@ input::placeholder{color:#a8a29e}
 <!-- WIZARD -->
 <div id="wizard">
 
-  <!-- STEP 1 hidden -->
-  <div class="w-step" id="step1">
-    <div class="card">
-      <div class="stepper">
-        <div class="snode"><div class="sdot active">1</div><div class="slabel active">API Key</div></div>
-        <div class="sline"></div>
-        <div class="snode"><div class="sdot">2</div><div class="slabel">Name</div></div>
-        <div class="sline"></div>
-        <div class="snode"><div class="sdot">3</div><div class="slabel">Subject</div></div>
-      </div>
-      <div class="chead">
-        <h2>🔑 Welcome to Vidya</h2>
-        <p>Your AI tutor for Karnataka SSLC 2025-26</p>
-      </div>
-      <div class="field">
-        <label>Gemini API Key <a href="https://aistudio.google.com/apikey" target="_blank">Get free key →</a></label>
-        <div class="iw">
-          <input type="password" id="apiKeyInput" placeholder="AIzaSy…" autocomplete="off" oninput="validateS1()" onkeyup="validateS1()" onchange="validateS1()"/>
-          <button class="peye" onclick="togglePw()">👁</button>
-        </div>
-        <div class="fnote">🔒 Stays in your browser only</div>
-      </div>
-      <div class="icard"><span>📅</span><p>Trained on <strong>DSERT LBA PDFs 2025-26</strong> and <strong>KSEAB Blueprint</strong>. Exam 1: <strong>March 18, 2026</strong>!</p></div>
-      <button class="btn" id="s1btn" onclick="goToStep(2)">Continue →</button>
-    </div>
-  </div>
-
   <!-- STEP 2 — entry point -->
   <div class="w-step active" id="step2">
     <div class="card">
       <div class="stepper">
-        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">API Key</div></div>
-        <div class="sline done"></div>
-        <div class="snode"><div class="sdot active">2</div><div class="slabel active">Name</div></div>
+        <div class="snode"><div class="sdot active">1</div><div class="slabel active">Your Name</div></div>
         <div class="sline"></div>
-        <div class="snode"><div class="sdot">3</div><div class="slabel">Subject</div></div>
+        <div class="snode"><div class="sdot">2</div><div class="slabel">Subject</div></div>
       </div>
       <div class="chead">
         <h2>👋 Welcome to Vidya!</h2>
@@ -471,11 +442,9 @@ input::placeholder{color:#a8a29e}
   <div class="w-step" id="step3">
     <div class="card" style="max-width:500px;width:100%">
       <div class="stepper">
-        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">API Key</div></div>
+        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">Your Name</div></div>
         <div class="sline done"></div>
-        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">Name</div></div>
-        <div class="sline done"></div>
-        <div class="snode"><div class="sdot active">3</div><div class="slabel active">Subject</div></div>
+        <div class="snode"><div class="sdot active">2</div><div class="slabel active">Subject</div></div>
       </div>
       <div class="chead">
         <h2>📚 Choose your session</h2>
@@ -710,7 +679,7 @@ function validateS2(){
 let _pickedSubject = '';
 function pickSubject(s){
   _pickedSubject = s;
-  document.querySelectorAll('.spill').forEach(b=>b.classList.toggle('active',b.dataset.s===s));
+  document.querySelectorAll('.spill').forEach(b=>b.classList.toggle('sel',b.dataset.s===s));
   document.getElementById('s3btn').disabled = false;
 }
 function validateS3(){

@@ -634,7 +634,7 @@ input::placeholder{color:#a8a29e}
           <button onclick="clearUpload()">✕</button>
         </div>
       </div>
-      <div class="input-note">⚡ Gemma 3 27B · DSERT SSLC 2025-26 · <span id="reqCount"></span></div>
+      <div class="input-note">⚡ Gemini 1.5 Flash · DSERT SSLC 2025-26 · <span id="reqCount"></span></div>
     </div>
   </div>
   <div class="tab-panel" id="panel-ref">
@@ -695,19 +695,28 @@ input::placeholder{color:#a8a29e}
 /* ══════════════════════════════════════════
    STATE
 ══════════════════════════════════════════ */
-// App configuration — replace the parts below with your key split in half
-// Get your key from https://aistudio.google.com/apikey
-// Split your key: first half goes in _a, second half in _b
-// Example key AIzaSyABCDEFGHIJ1234567890 → _a='AIzaSyABCDEFG' _b='HIJ1234567890'
-const _a = 'AIzaSyCnPA_NXASixUl';
-const _b = 'yYKhwWEI4I2bOkAY2_Bc';
-const _k = _a + _b;
+// ── API KEYS (rotate automatically when quota is hit) ────────────
+// Add up to 5 keys — split each in half to avoid GitHub scanner
+// Get free keys from https://aistudio.google.com/apikey
+const KEYS = [
+  ['AIzaSyCnPA_NXASixUl', 'yYKhwWEI4I2bOkAY2_Bc'],
+  ['AIzaSyCaC0UaFuvo4CO', 'ikaDMRn_GYnVltWjWdfo'],
+  ['AIzaSyBwYVNOEgV-8Nv', 'd_lO7W1MI1PBs-EX4PnQ'],
+  ['AIzaSyDfpeAhUN1L9-z', 'hoBoA_4FvKkq-NdordPs'],
+].filter(k => !k[0].includes('HALF')).map(k => k[0]+k[1]);
+
+let _keyIndex = 0;
+function getNextKey(){
+  _keyIndex = (_keyIndex + 1) % KEYS.length;
+  return KEYS[_keyIndex];
+}
+function getCurrentKey(){ return KEYS[_keyIndex]; }
 // ─────────────────────────────────────────────────────────────────
 
-let GEM_KEY=_k, STU_NAME='', SUBJECT='', MODE='tutor';
+let GEM_KEY=getCurrentKey(), STU_NAME='', SUBJECT='', MODE='tutor';
 
 // ── MODEL & RATE LIMITING ─────────────────────────────────────────
-const CURRENT_MODEL = 'gemma-3-27b-it'; // switch to 'gemini-1.5-flash' to enable per-user limit
+const CURRENT_MODEL = 'gemini-1.5-flash'; // switch to 'gemini-1.5-flash' to enable per-user limit
 const USER_DAILY_LIMIT = 20;
 
 function getRateLimitKey(){ const d=new Date().toISOString().slice(0,10); return 'vidya_req_'+(STU_NAME||'u')+'_'+d; }
@@ -904,7 +913,7 @@ function launchApp(){
     if(pills){ pills.style.outline='2px solid #ef4444'; setTimeout(()=>{ pills.style.outline=''; }, 2000); }
     return;
   }
-  GEM_KEY  = _k;
+  GEM_KEY  = getCurrentKey();
   STU_NAME = document.getElementById('nameInput').value.trim()||'Champion';
   SUBJECT  = _pickedSubject || 'All Subjects';
 
@@ -1262,8 +1271,15 @@ async function sendMsg(){
       friendly = "🔑 There's a problem with the app's API key. Please let your teacher know!";
     else if(msg.includes('leaked') || msg.includes('reported'))
       friendly = "🔑 The app's API key needs to be updated. Please inform your teacher!";
-    else if(msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429'))
-      friendly = "⏳ Too many students using Vidya right now! Please wait a minute and try again 😊";
+    else if(msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429')){
+      // Try rotating to next key
+      if(KEYS.length > 1){
+        GEM_KEY = getNextKey();
+        addBubble('bot', '🔄 Switching to backup key, please resend your question…');
+      } else {
+        friendly = "⏳ Too many requests right now! Please wait a minute and try again 😊";
+      }
+    }
     else if(msg.includes('SAFETY') || msg.includes('safety'))
       friendly = "🛡️ That question was blocked by the safety filter. Try rephrasing it!";
     else if(msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch'))

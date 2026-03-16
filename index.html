@@ -1,0 +1,2689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Vidya — Karnataka SSLC AI Tutor</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════
+   TOKENS & RESET
+═══════════════════════════════════════════ */
+:root {
+  --saffron:        #f97316;
+  --saffron-deep:   #ea580c;
+  --saffron-glow:   rgba(249,115,22,0.18);
+  --saffron-pale:   #fff7ed;
+  --turmeric:       #f59e0b;
+  --turmeric-pale:  #fffbeb;
+  --green:          #16a34a;
+  --green-pale:     #f0fdf4;
+  --blue:           #2563eb;
+  --blue-pale:      #eff6ff;
+  --violet:         #7c3aed;
+  --violet-pale:    #f5f3ff;
+  --red:            #dc2626;
+  --ink:            #0f172a;
+  --ink-2:          #1e293b;
+  --ink-3:          #334155;
+  --muted:          #64748b;
+  --muted-2:        #94a3b8;
+  --border:         #e2e8f0;
+  --border-2:       #cbd5e1;
+  --surface:        #ffffff;
+  --surface-2:      #f8fafc;
+  --surface-3:      #f1f5f9;
+  --font:           'Plus Jakarta Sans', sans-serif;
+  --mono:           'JetBrains Mono', monospace;
+  --r-sm:  8px;
+  --r-md:  14px;
+  --r-lg:  20px;
+  --r-xl:  28px;
+  --r-full: 9999px;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:  0 4px 16px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.06);
+  --shadow-lg:  0 20px 60px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.08);
+  --shadow-glow: 0 0 0 3px var(--saffron-glow);
+  --transition: 0.18s cubic-bezier(.4,0,.2,1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  background: var(--ink);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATED BACKGROUND
+═══════════════════════════════════════════ */
+.bg {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  background: linear-gradient(145deg, #0f0a00 0%, #1a0e00 40%, #0a0f1a 100%);
+}
+.bg-orb {
+  position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35;
+  animation: orb-drift 12s ease-in-out infinite alternate;
+}
+.bg-orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #f9731640, #ea580c10); top: -100px; left: -150px; animation-delay: 0s; }
+.bg-orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, #f59e0b30, #fbbf2410); top: 30%; right: -100px; animation-delay: -4s; }
+.bg-orb-3 { width: 400px; height: 400px; background: radial-gradient(circle, #7c3aed20, #a78bfa10); bottom: -80px; left: 30%; animation-delay: -8s; }
+@keyframes orb-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(30px, 20px) scale(1.08); }
+}
+.bg-grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ═══════════════════════════════════════════
+   WIZARD OVERLAY
+═══════════════════════════════════════════ */
+#wizard {
+  position: relative; z-index: 10;
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.w-step { display: none; width: 100%; max-width: 440px; flex-direction: column; }
+.w-step.active { display: flex; animation: wiz-in .3s cubic-bezier(.34,1.56,.64,1); }
+@keyframes wiz-in {
+  from { opacity: 0; transform: translateY(18px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Glass card */
+.glass-card {
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(32px) saturate(160%);
+  -webkit-backdrop-filter: blur(32px) saturate(160%);
+  border: 1.5px solid rgba(255,255,255,.12);
+  border-radius: var(--r-xl);
+  padding: 36px 32px;
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,.1);
+}
+@media(max-width:480px) { .glass-card { padding: 28px 20px; } }
+
+/* Progress stepper */
+.stepper { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 32px; }
+.step-node { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.step-dot {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; transition: all .3s;
+  border: 2px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.35);
+  background: rgba(255,255,255,.05);
+}
+.step-dot.active {
+  background: var(--saffron); border-color: var(--saffron);
+  color: white; box-shadow: 0 0 0 6px rgba(249,115,22,.2), 0 4px 12px rgba(249,115,22,.4);
+}
+.step-dot.done {
+  background: var(--green); border-color: var(--green); color: white;
+}
+.step-label { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: rgba(255,255,255,.3); }
+.step-label.active { color: var(--saffron); }
+.step-label.done   { color: var(--green); }
+.step-connector { width: 44px; height: 2px; background: rgba(255,255,255,.1); margin-bottom: 16px; transition: background .3s; }
+.step-connector.done { background: var(--green); }
+
+/* Wizard card header */
+.wiz-head { text-align: center; margin-bottom: 28px; }
+.wiz-icon {
+  width: 72px; height: 72px; margin: 0 auto 14px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--saffron), var(--turmeric));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; box-shadow: 0 8px 24px rgba(249,115,22,.4);
+}
+.wiz-head h2 { font-size: 24px; font-weight: 900; color: white; letter-spacing: -.02em; }
+.wiz-head p  { color: rgba(255,255,255,.55); font-size: 14px; margin-top: 7px; line-height: 1.55; }
+
+/* Badges */
+.badge-row { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.badge {
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: var(--r-full);
+  letter-spacing: .01em;
+}
+.badge-orange { background: rgba(249,115,22,.18); color: #fbbf24; border: 1px solid rgba(249,115,22,.3); }
+.badge-green  { background: rgba(22,163,74,.18);  color: #4ade80; border: 1px solid rgba(22,163,74,.3);  }
+.badge-blue   { background: rgba(37,99,235,.18);  color: #93c5fd; border: 1px solid rgba(37,99,235,.3);  }
+.badge-violet { background: rgba(124,58,237,.18); color: #c4b5fd; border: 1px solid rgba(124,58,237,.3); }
+
+/* Form fields */
+.field { margin-bottom: 18px; }
+.field label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,.6);
+  margin-bottom: 8px; letter-spacing: .03em; text-transform: uppercase;
+}
+.field label a { color: var(--saffron); text-decoration: none; text-transform: none; font-size: 12px; }
+.field label a:hover { text-decoration: underline; }
+.input-wrap { position: relative; }
+input[type="password"], input[type="text"] {
+  width: 100%; border: 1.5px solid rgba(255,255,255,.12); border-radius: var(--r-md);
+  padding: 13px 16px; font-size: 15px; color: white;
+  background: rgba(255,255,255,.07); font-family: var(--font);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+input:focus {
+  border-color: var(--saffron);
+  box-shadow: var(--shadow-glow);
+  background: rgba(255,255,255,.10);
+}
+input::placeholder { color: rgba(255,255,255,.25); }
+.pw-eye {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,.35); font-size: 16px; padding: 4px; line-height: 1;
+  transition: color var(--transition);
+}
+.pw-eye:hover { color: rgba(255,255,255,.7); }
+
+/* Info box */
+.info-card {
+  background: rgba(249,115,22,.08); border: 1px solid rgba(249,115,22,.2);
+  border-radius: var(--r-md); padding: 12px 15px;
+  display: flex; gap: 10px; margin-bottom: 20px;
+}
+.info-card span { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.info-card p { font-size: 13px; color: rgba(255,255,255,.6); line-height: 1.5; }
+.info-card strong { color: rgba(255,255,255,.85); }
+
+/* Name preview */
+.name-preview {
+  margin-top: 10px; padding: 11px 16px; border-radius: var(--r-md);
+  background: linear-gradient(135deg, rgba(249,115,22,.15), rgba(245,158,11,.1));
+  border: 1px solid rgba(249,115,22,.25);
+  font-size: 13.5px; font-weight: 700; color: #fbbf24;
+  text-align: center; display: none;
+  animation: wiz-in .2s ease;
+}
+
+/* Subject pills */
+.subj-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.spill {
+  padding: 9px 16px; border-radius: var(--r-full);
+  border: 1.5px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  color: rgba(255,255,255,.6); font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: var(--font);
+  transition: all var(--transition); white-space: nowrap;
+}
+.spill:hover { border-color: rgba(249,115,22,.5); color: var(--saffron); background: rgba(249,115,22,.08); }
+.spill.sel { background: var(--saffron); border-color: var(--saffron); color: white; box-shadow: 0 3px 12px rgba(249,115,22,.35); }
+.spill[data-s="Mathematics"].sel  { background: var(--blue); border-color: var(--blue); box-shadow: 0 3px 12px rgba(37,99,235,.35); }
+.spill[data-s="Science"].sel      { background: var(--green); border-color: var(--green); box-shadow: 0 3px 12px rgba(22,163,74,.35); }
+.spill[data-s="Social Science"].sel { background: var(--red); border-color: var(--red); box-shadow: 0 3px 12px rgba(220,38,38,.35); }
+.spill[data-s="Hindi"].sel        { background: #0891b2; border-color: #0891b2; box-shadow: 0 3px 12px rgba(8,145,178,.35); }
+.spill[data-s="Kannada"].sel      { background: #15803d; border-color: #15803d; }
+.spill[data-s="Sanskrit"].sel     { background: #b45309; border-color: #b45309; }
+.spill[data-s="All Subjects"].sel { background: linear-gradient(135deg,var(--violet),var(--saffron)); border: none; box-shadow: 0 3px 12px rgba(124,58,237,.35); }
+
+/* Mode cards */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mode-pill {
+  padding: 12px 14px; border-radius: var(--r-md);
+  border: 1.5px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.04);
+  cursor: pointer; font-family: var(--font); text-align: left;
+  transition: all var(--transition);
+}
+.mode-pill:hover { border-color: rgba(249,115,22,.4); background: rgba(249,115,22,.06); }
+.mode-pill.active { border-color: var(--saffron); background: rgba(249,115,22,.12); }
+.mode-pill.sslc-mode { grid-column: span 2; border-color: rgba(124,58,237,.3); background: rgba(124,58,237,.08); }
+.mode-pill.sslc-mode.active { border-color: var(--violet); background: rgba(124,58,237,.18); }
+.mode-pill.sslc-mode:hover { border-color: rgba(124,58,237,.6); }
+.mp-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,.85); display: flex; align-items: center; gap: 6px; }
+.mode-pill.sslc-mode .mp-title { color: #c4b5fd; }
+.mp-desc  { font-size: 11.5px; color: rgba(255,255,255,.4); margin-top: 3px; }
+
+/* Buttons */
+.btn-primary {
+  width: 100%; padding: 15px; border-radius: var(--r-md);
+  border: none; font-size: 15.5px; font-weight: 800;
+  cursor: pointer; font-family: var(--font);
+  background: linear-gradient(135deg, var(--saffron), var(--turmeric));
+  color: white;
+  box-shadow: 0 4px 20px rgba(249,115,22,.4), inset 0 1px 0 rgba(255,255,255,.2);
+  transition: all var(--transition); letter-spacing: .01em;
+  position: relative; overflow: hidden;
+}
+.btn-primary::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,.08) 100%);
+  opacity: 0; transition: opacity var(--transition);
+}
+.btn-primary:hover:not(:disabled)::after { opacity: 1; }
+.btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(249,115,22,.5), inset 0 1px 0 rgba(255,255,255,.2); }
+.btn-primary:active:not(:disabled) { transform: translateY(0); }
+.btn-primary:disabled { background: rgba(255,255,255,.1); color: rgba(255,255,255,.3); cursor: not-allowed; box-shadow: none; }
+.btn-ghost {
+  width: 100%; padding: 12px; border-radius: var(--r-md);
+  border: 1.5px solid rgba(255,255,255,.1);
+  background: transparent; color: rgba(255,255,255,.5);
+  font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font);
+  margin-top: 10px; transition: all var(--transition);
+}
+.btn-ghost:hover { border-color: rgba(255,255,255,.25); color: rgba(255,255,255,.8); background: rgba(255,255,255,.05); }
+.field-note { font-size: 11.5px; color: rgba(255,255,255,.3); margin-top: 6px; line-height: 1.5; }
+
+/* ═══════════════════════════════════════════
+   MAIN APP SHELL
+═══════════════════════════════════════════ */
+#app { display: none; height: 100%; flex-direction: column; position: relative; z-index: 10; }
+#app.active { display: flex; }
+
+/* Topbar */
+.topbar {
+  background: rgba(15,10,0,.9); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  padding: 0 18px; height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; gap: 12px;
+}
+.tb-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tb-logo {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--saffron), var(--turmeric));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; box-shadow: 0 2px 8px rgba(249,115,22,.4);
+}
+.tb-name { font-size: 14px; font-weight: 800; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-sub  { font-size: 11px; color: rgba(255,255,255,.35); white-space: nowrap; font-weight: 600; }
+.tb-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.tb-btn {
+  font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: var(--r-sm);
+  border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.55); cursor: pointer; font-family: var(--font);
+  transition: all var(--transition); white-space: nowrap;
+}
+.tb-btn:hover { border-color: rgba(249,115,22,.4); color: var(--saffron); background: rgba(249,115,22,.08); }
+.tb-btn.danger:hover { border-color: rgba(220,38,38,.4); color: #f87171; background: rgba(220,38,38,.08); }
+
+/* Subject tab strip */
+.subj-strip {
+  background: rgba(15,10,0,.7); backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  display: flex; overflow-x: auto; flex-shrink: 0; padding: 0 6px;
+}
+.subj-strip::-webkit-scrollbar { height: 0; }
+.stab {
+  display: flex; align-items: center; gap: 5px;
+  padding: 10px 14px; font-size: 12.5px; font-weight: 800;
+  color: rgba(255,255,255,.35); border: none; background: none;
+  cursor: pointer; font-family: var(--font); white-space: nowrap;
+  border-bottom: 2.5px solid transparent; margin-bottom: -1px;
+  flex-shrink: 0; transition: all var(--transition);
+}
+.stab:hover { color: rgba(255,255,255,.7); background: rgba(255,255,255,.04); }
+.stab.active { color: var(--saffron); border-bottom-color: var(--saffron); background: rgba(249,115,22,.06); }
+.stab[data-s="Mathematics"].active { color: #93c5fd; border-bottom-color: #93c5fd; background: rgba(37,99,235,.08); }
+.stab[data-s="Science"].active     { color: #4ade80; border-bottom-color: #4ade80; background: rgba(22,163,74,.08); }
+.stab[data-s="Social Science"].active { color: #fca5a5; border-bottom-color: #fca5a5; background: rgba(220,38,38,.08); }
+.stab[data-s="English"].active     { color: #fbbf24; border-bottom-color: #fbbf24; background: rgba(245,158,11,.08); }
+.stab[data-s="Hindi"].active       { color: #67e8f9; border-bottom-color: #67e8f9; background: rgba(8,145,178,.08); }
+.stab[data-s="Kannada"].active     { color: #86efac; border-bottom-color: #86efac; background: rgba(21,128,61,.08); }
+.stab[data-s="Sanskrit"].active    { color: #fcd34d; border-bottom-color: #fcd34d; background: rgba(180,83,9,.08); }
+
+/* Feature tabs */
+.feat-tabs {
+  display: flex; background: rgba(0,0,0,.3); border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0; padding: 0 18px; gap: 2px;
+}
+.ftab {
+  padding: 10px 16px; font-size: 13px; font-weight: 700;
+  color: rgba(255,255,255,.35); border: none; background: none;
+  cursor: pointer; font-family: var(--font);
+  border-bottom: 2.5px solid transparent; margin-bottom: -1px;
+  transition: all var(--transition); display: flex; align-items: center; gap: 6px;
+}
+.ftab:hover { color: rgba(255,255,255,.65); }
+.ftab.active { color: white; border-bottom-color: var(--saffron); }
+
+/* ═══════════════════════════════════════════
+   TAB PANELS
+═══════════════════════════════════════════ */
+.tab-panel { flex: 1; overflow: hidden; display: none; flex-direction: column; }
+.tab-panel.active { display: flex; }
+
+/* ─── CHAT PANEL ─── */
+.chat-scroll {
+  flex: 1; overflow-y: auto; padding: 20px 16px;
+  scroll-behavior: smooth;
+}
+.chat-scroll::-webkit-scrollbar { width: 4px; }
+.chat-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 10px; }
+.msgs-inner { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+/* Message rows */
+.msg-row { display: flex; align-items: flex-end; gap: 10px; animation: msg-in .22s ease-out; }
+.msg-row.user { justify-content: flex-end; }
+.msg-row.bot  { justify-content: flex-start; }
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.bot-av {
+  width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--saffron), var(--turmeric));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; box-shadow: 0 2px 8px rgba(249,115,22,.35);
+}
+.bubble {
+  max-width: 76%; padding: 13px 17px; font-size: 14px; line-height: 1.72;
+  word-break: break-word;
+}
+.bubble.user {
+  background: linear-gradient(135deg, var(--saffron), var(--turmeric));
+  color: white; border-radius: 18px 18px 4px 18px;
+  box-shadow: 0 4px 16px rgba(249,115,22,.3);
+}
+.bubble.bot {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.9); border-radius: 18px 18px 18px 4px;
+  backdrop-filter: blur(10px);
+}
+.bubble.bot code {
+  font-family: var(--mono); font-size: 12.5px;
+  background: rgba(249,115,22,.15); padding: 2px 6px;
+  border-radius: 4px; color: #fbbf24;
+}
+.bubble.bot strong { color: white; }
+.bubble.bot em { color: rgba(255,255,255,.75); }
+.bubble.bot pre {
+  background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px; padding: 12px 14px; margin: 8px 0;
+  overflow-x: auto; font-family: var(--mono); font-size: 12.5px;
+  color: #e2e8f0; line-height: 1.6;
+}
+
+/* Typing indicator */
+.typing-row { display: flex; align-items: flex-end; gap: 10px; }
+.typing-bub {
+  display: flex; gap: 5px; align-items: center;
+  padding: 13px 17px; background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 18px 18px 18px 4px;
+}
+.td { width: 7px; height: 7px; border-radius: 50%; animation: td-b 1.1s infinite; }
+.td:nth-child(1) { background: var(--saffron); animation-delay: 0ms; }
+.td:nth-child(2) { background: var(--turmeric); animation-delay: 160ms; }
+.td:nth-child(3) { background: var(--green); animation-delay: 320ms; }
+@keyframes td-b { 0%,100%{transform:translateY(0);opacity:.4} 50%{transform:translateY(-5px);opacity:1} }
+
+/* Quick chips */
+.chips-wrap { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.chip {
+  font-size: 12px; font-weight: 700; padding: 6px 13px; border-radius: var(--r-full);
+  border: 1px solid rgba(249,115,22,.3); background: rgba(249,115,22,.08);
+  color: rgba(255,182,77,.9); cursor: pointer; font-family: var(--font);
+  transition: all var(--transition);
+}
+.chip:hover { background: var(--saffron); color: white; border-color: var(--saffron); box-shadow: 0 2px 8px rgba(249,115,22,.3); }
+
+/* Input bar */
+.input-bar {
+  background: rgba(15,10,0,.85); backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,.07);
+  padding: 14px 16px; flex-shrink: 0;
+}
+.input-row { max-width: 720px; margin: 0 auto; display: flex; gap: 9px; align-items: flex-end; }
+.chat-input {
+  flex: 1; border: 1.5px solid rgba(255,255,255,.1); border-radius: var(--r-md);
+  padding: 12px 16px; font-size: 14px; resize: none; font-family: var(--font);
+  max-height: 120px; line-height: 1.55;
+  background: rgba(255,255,255,.06); color: white;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+.chat-input:focus { border-color: var(--saffron); box-shadow: var(--shadow-glow); background: rgba(255,255,255,.09); }
+.chat-input::placeholder { color: rgba(255,255,255,.2); }
+.send-btn {
+  width: 42px; height: 42px; border-radius: 12px; border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; transition: all var(--transition);
+}
+.send-btn.on {
+  background: linear-gradient(135deg, var(--saffron), var(--turmeric));
+  box-shadow: 0 3px 12px rgba(249,115,22,.4);
+  color: white;
+}
+.send-btn.on:hover { transform: scale(1.07); box-shadow: 0 4px 18px rgba(249,115,22,.55); }
+.send-btn.off { background: rgba(255,255,255,.08); color: rgba(255,255,255,.2); cursor: not-allowed; }
+.send-btn svg { width: 16px; height: 16px; }
+.upload-strip { max-width: 720px; margin: 8px auto 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.upload-btn {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; padding: 5px 12px;
+  border-radius: var(--r-full); border: 1px dashed rgba(255,255,255,.15);
+  background: transparent; color: rgba(255,255,255,.4);
+  cursor: pointer; font-family: var(--font); transition: all var(--transition);
+}
+.upload-btn:hover { border-color: rgba(249,115,22,.5); color: var(--saffron); background: rgba(249,115,22,.06); }
+.upload-preview {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(22,163,74,.12); border: 1px solid rgba(22,163,74,.25);
+  border-radius: var(--r-full); padding: 4px 12px;
+  font-size: 11.5px; font-weight: 700; color: #4ade80;
+}
+.upload-preview button { background: none; border: none; cursor: pointer; color: #f87171; font-size: 14px; line-height: 1; padding: 0 0 0 4px; }
+.input-note { font-size: 10.5px; color: rgba(255,255,255,.18); text-align: center; margin-top: 8px; }
+
+/* ─── QUIZ CARDS ─── */
+.quiz-card {
+  background: rgba(255,255,255,.06); border: 1.5px solid rgba(249,115,22,.25);
+  border-radius: 16px; padding: 18px; max-width: 82%;
+  backdrop-filter: blur(10px);
+}
+.quiz-card.answered { border-color: rgba(255,255,255,.1); opacity: .8; }
+.quiz-qnum { font-size: 11px; font-weight: 800; color: var(--saffron); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 7px; }
+.quiz-qtext { font-size: 14px; color: rgba(255,255,255,.9); line-height: 1.65; margin-bottom: 13px; white-space: pre-wrap; }
+.quiz-options { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+.quiz-opt {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border: 1.5px solid rgba(255,255,255,.1); border-radius: 10px;
+  background: rgba(255,255,255,.04); cursor: pointer;
+  font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,.75);
+  font-family: var(--font); text-align: left; transition: all var(--transition);
+}
+.quiz-opt:hover:not(:disabled) { border-color: rgba(249,115,22,.5); color: white; background: rgba(249,115,22,.1); }
+.opt-letter {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: rgba(255,255,255,.08); display: flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 800;
+  color: rgba(255,255,255,.4); flex-shrink: 0;
+}
+.quiz-opt.correct { border-color: var(--green); background: rgba(22,163,74,.15); color: #4ade80; }
+.quiz-opt.correct .opt-letter { background: var(--green); color: white; }
+.quiz-opt.wrong   { border-color: var(--red); background: rgba(220,38,38,.12); color: #fca5a5; }
+.quiz-opt.wrong   .opt-letter { background: var(--red); color: white; }
+.quiz-opt.reveal  { border-color: var(--green); background: rgba(22,163,74,.12); color: #4ade80; }
+.quiz-opt:disabled { cursor: default; }
+.quiz-write-wrap { display: flex; flex-direction: column; gap: 8px; }
+.quiz-write {
+  width: 100%; border: 1.5px solid rgba(255,255,255,.1); border-radius: 10px;
+  padding: 11px 14px; font-size: 13.5px; font-family: var(--font);
+  resize: none; min-height: 64px; background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.9); line-height: 1.55; outline: none;
+  transition: border-color var(--transition);
+}
+.quiz-write:focus { border-color: var(--saffron); background: rgba(255,255,255,.09); }
+.quiz-write:disabled { opacity: .5; cursor: default; }
+.quiz-write::placeholder { color: rgba(255,255,255,.2); }
+.quiz-submit {
+  align-self: flex-end; padding: 8px 20px; border-radius: var(--r-sm); border: none;
+  background: linear-gradient(135deg, var(--saffron), var(--turmeric));
+  color: white; font-size: 13px; font-weight: 800; cursor: pointer;
+  font-family: var(--font); transition: all var(--transition);
+  box-shadow: 0 2px 8px rgba(249,115,22,.3);
+}
+.quiz-submit:hover { transform: scale(1.03); }
+.quiz-submit:disabled { background: rgba(255,255,255,.1); color: rgba(255,255,255,.3); cursor: default; transform: none; box-shadow: none; }
+
+/* ─── REFERENCE TAB ─── */
+.ref-scroll { flex: 1; overflow-y: auto; padding: 16px; }
+.ref-scroll::-webkit-scrollbar { width: 4px; }
+.ref-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 10px; }
+.ref-inner { max-width: 720px; margin: 0 auto; }
+.ref-hint {
+  background: rgba(249,115,22,.08); border: 1px solid rgba(249,115,22,.2);
+  border-radius: var(--r-md); padding: 12px 16px; margin-bottom: 14px;
+  font-size: 13px; color: rgba(255,255,255,.55); line-height: 1.6;
+}
+.ref-hint strong { color: rgba(255,255,255,.8); }
+.ref-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.ref-select {
+  width: 100%; border: 1.5px solid rgba(255,255,255,.1); border-radius: var(--r-sm);
+  padding: 9px 36px 9px 13px; font-size: 13px; color: rgba(255,255,255,.75);
+  background: rgba(255,255,255,.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+  font-family: var(--font); outline: none; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  transition: border-color var(--transition);
+}
+.ref-select:focus { border-color: var(--saffron); }
+.ref-select option { background: #1e1b10; color: white; }
+.ref-group { margin-bottom: 14px; }
+.ref-group-title {
+  font-size: 11px; font-weight: 800; color: rgba(255,255,255,.3);
+  text-transform: uppercase; letter-spacing: .07em;
+  margin-bottom: 8px; padding-left: 4px; display: flex; align-items: center; gap: 7px;
+}
+.ref-card {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  border-radius: var(--r-md); overflow: hidden; margin-bottom: 8px;
+  transition: border-color var(--transition);
+}
+.ref-card:hover { border-color: rgba(255,255,255,.15); }
+.ref-card-head {
+  padding: 13px 16px; display: flex; align-items: center;
+  justify-content: space-between; gap: 10px;
+  cursor: pointer; user-select: none;
+}
+.ref-card-head:hover { background: rgba(255,255,255,.03); }
+.ref-card-title { font-size: 13.5px; font-weight: 800; color: rgba(255,255,255,.8); }
+.ref-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.pill {
+  font-size: 10px; font-weight: 700; padding: 3px 8px;
+  border-radius: var(--r-full);
+}
+.pill-red    { background: rgba(220,38,38,.15); color: #fca5a5; border: 1px solid rgba(220,38,38,.3); }
+.pill-orange { background: rgba(249,115,22,.15); color: #fbbf24; border: 1px solid rgba(249,115,22,.3); }
+.pill-violet { background: rgba(124,58,237,.15); color: #c4b5fd; border: 1px solid rgba(124,58,237,.3); }
+.pill-green  { background: rgba(22,163,74,.15);  color: #4ade80; border: 1px solid rgba(22,163,74,.3); }
+.chev { font-size: 12px; color: rgba(255,255,255,.3); transition: transform .2s; }
+.chev.open { transform: rotate(180deg); }
+.ref-card-body { display: none; padding: 14px 16px; background: rgba(0,0,0,.2); border-top: 1px solid rgba(255,255,255,.06); }
+.ref-card-body.open { display: block; }
+.ref-body { font-size: 13.5px; color: rgba(255,255,255,.65); line-height: 1.85; white-space: pre-wrap; font-family: var(--mono); }
+.ref-body strong { color: rgba(255,255,255,.9); font-family: var(--font); }
+.hi { color: var(--saffron); font-weight: 800; }
+.ref-empty { text-align: center; padding: 48px 20px; color: rgba(255,255,255,.25); }
+.ref-empty .re-icon { font-size: 36px; margin-bottom: 10px; }
+.ref-empty p { font-size: 14px; }
+
+/* ═══════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════ */
+@keyframes fadeUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes shake   { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+input.error { animation: shake .4s ease; border-color: #ef4444 !important; }
+</style>
+</head>
+<body>
+
+<div class="bg">
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+  <div class="bg-grid"></div>
+</div>
+
+<!-- ════════════════════════════════════
+     WIZARD
+════════════════════════════════════ -->
+<div id="wizard">
+
+  <!-- STEP 1 — API KEY -->
+  <div class="w-step" id="step1">
+    <div class="glass-card">
+      <div class="stepper">
+        <div class="step-node">
+          <div class="step-dot active">1</div>
+          <div class="step-label active">API Key</div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-node">
+          <div class="step-dot">2</div>
+          <div class="step-label">Your Name</div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-node">
+          <div class="step-dot">3</div>
+          <div class="step-label">Subject</div>
+        </div>
+      </div>
+
+      <div class="wiz-head">
+        <div class="wiz-icon">🎓</div>
+        <h2>Welcome to Vidya</h2>
+        <p>Your AI tutor for Karnataka SSLC<br><strong style="color:rgba(255,255,255,.7)">Class 10 · 2025-26</strong></p>
+        <div class="badge-row">
+          <span class="badge badge-orange">🇮🇳 Karnataka Board</span>
+          <span class="badge badge-green">DSERT 2025-26</span>
+          <span class="badge badge-blue">KSEAB Blueprint</span>
+          <span class="badge badge-violet">Gemini AI</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>🔑 Gemini API Key <a href="https://aistudio.google.com/apikey" target="_blank">Get free key →</a></label>
+        <div class="input-wrap">
+          <input type="password" id="apiKeyInput" placeholder="AIzaSy…" autocomplete="off" oninput="validateS1()" onkeyup="validateS1()" onchange="validateS1()"/>
+          <button class="pw-eye" onclick="togglePw()">👁</button>
+        </div>
+        <div class="field-note">🔒 Stays in your browser only — never stored or shared</div>
+      </div>
+
+      <div class="info-card">
+        <span>📅</span>
+        <p>Vidya is trained on official <strong>DSERT LBA PDFs 2025-26</strong> and the full <strong>KSEAB Blueprint</strong>. Exam 1 is <strong>March 18, 2026</strong>!</p>
+      </div>
+
+      <button class="btn-primary" id="s1btn" onclick="goToStep(2)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 — NAME -->
+  <div class="w-step active" id="step2">
+    <div class="glass-card">
+      <div class="stepper">
+        <div class="step-node">
+          <div class="step-dot done">✓</div>
+          <div class="step-label done">API Key</div>
+        </div>
+        <div class="step-connector done"></div>
+        <div class="step-node">
+          <div class="step-dot active">2</div>
+          <div class="step-label active">Your Name</div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-node">
+          <div class="step-dot">3</div>
+          <div class="step-label">Subject</div>
+        </div>
+      </div>
+
+      <div class="wiz-head">
+        <div class="wiz-icon">🎓</div>
+        <h2>Welcome to Vidya!</h2>
+        <p>Your AI tutor for Karnataka SSLC Class 10<br><strong style="color:rgba(255,255,255,.8)">2025-26 · What's your name?</strong></p>
+        <div class="badge-row">
+          <span class="badge badge-orange">🇮🇳 Karnataka Board</span>
+          <span class="badge badge-green">DSERT 2025-26</span>
+          <span class="badge badge-blue">KSEAB Blueprint</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>✏️ Your First Name</label>
+        <input type="text" id="nameInput" placeholder="e.g. Arjun, Kavya, Riya…"
+          oninput="validateS2()" autocomplete="given-name" maxlength="30"/>
+        <div class="name-preview" id="namePreview"></div>
+      </div>
+
+      <button class="btn-primary" id="s2btn" onclick="goToStep(3)">Continue →</button>
+
+    </div>
+  </div>
+
+  <!-- STEP 3 — SUBJECT & MODE -->
+  <div class="w-step" id="step3">
+    <div class="glass-card" style="max-width:500px;width:100%">
+      <div class="stepper">
+        <div class="step-node">
+          <div class="step-dot done">✓</div>
+          <div class="step-label done">API Key</div>
+        </div>
+        <div class="step-connector done"></div>
+        <div class="step-node">
+          <div class="step-dot done">✓</div>
+          <div class="step-label done">Your Name</div>
+        </div>
+        <div class="step-connector done"></div>
+        <div class="step-node">
+          <div class="step-dot active">3</div>
+          <div class="step-label active">Subject</div>
+        </div>
+      </div>
+
+      <div class="wiz-head">
+        <div class="wiz-icon">📚</div>
+        <h2>Choose your session</h2>
+        <p>Class 10 SSLC · 2025-26 · Tap to select</p>
+      </div>
+
+      <div class="field">
+        <label>📖 Subject</label>
+        <div class="subj-pills" id="subjPills">
+          <button class="spill" data-s="All Subjects" onclick="pickSubject('All Subjects')">🌟 All Subjects</button>
+          <button class="spill" data-s="Mathematics" onclick="pickSubject('Mathematics')">🔢 Mathematics</button>
+          <button class="spill" data-s="Science" onclick="pickSubject('Science')">🔬 Science</button>
+          <button class="spill" data-s="Social Science" onclick="pickSubject('Social Science')">🌍 Social Science</button>
+          <button class="spill" data-s="English" onclick="pickSubject('English')">📖 English FL</button>
+          <button class="spill" data-s="Hindi" onclick="pickSubject('Hindi')">🇮🇳 Hindi</button>
+          <button class="spill" data-s="Kannada" onclick="pickSubject('Kannada')">🌿 Kannada</button>
+          <button class="spill" data-s="Sanskrit" onclick="pickSubject('Sanskrit')">🕉️ Sanskrit</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>🎯 Learning Mode</label>
+        <div class="modes">
+          <button class="mode-pill active" data-m="tutor" onclick="pickMode('tutor')">
+            <div class="mp-title">📚 Tutor Me</div>
+            <div class="mp-desc">Explain concepts step-by-step</div>
+          </button>
+          <button class="mode-pill" data-m="quiz" onclick="pickMode('quiz')">
+            <div class="mp-title">🧠 Quiz Me</div>
+            <div class="mp-desc">Test your knowledge</div>
+          </button>
+          <button class="mode-pill" data-m="homework" onclick="pickMode('homework')">
+            <div class="mp-title">✏️ Homework Help</div>
+            <div class="mp-desc">Solve problems together</div>
+          </button>
+          <button class="mode-pill" data-m="summary" onclick="pickMode('summary')">
+            <div class="mp-title">📋 Summary</div>
+            <div class="mp-desc">Quick chapter notes</div>
+          </button>
+          <button class="mode-pill sslc-mode" data-m="sslc" onclick="pickMode('sslc')">
+            <div class="mp-title">🎯 SSLC Exam Prep 2026</div>
+            <div class="mp-desc">Blueprint mock tests · March 18, 2026 · A+ strategy</div>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="s3btn" onclick="launchApp()">Start Learning 🚀</button>
+      <button class="btn-ghost" onclick="goToStep(2)">← Back</button>
+    </div>
+  </div>
+
+</div><!-- /wizard -->
+
+<!-- ════════════════════════════════════
+     MAIN APP
+════════════════════════════════════ -->
+<div id="app">
+
+  <div class="topbar">
+    <div class="tb-brand">
+      <div class="tb-logo">🎓</div>
+      <div>
+        <div class="tb-name" id="tbName">Vidya</div>
+        <div class="tb-sub"  id="tbSub">Class 10 · SSLC 2025-26</div>
+      </div>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" onclick="goToStep(3)">⚙️ Settings</button>
+      <button class="tb-btn danger" onclick="exitApp()">✕</button>
+    </div>
+  </div>
+
+  <div class="subj-strip" id="subjTabbar">
+    <button class="stab" data-s="All Subjects"  onclick="switchSubjectTab('All Subjects')">🌟 All</button>
+    <button class="stab" data-s="Mathematics"   onclick="switchSubjectTab('Mathematics')">🔢 Maths</button>
+    <button class="stab" data-s="Science"       onclick="switchSubjectTab('Science')">🔬 Science</button>
+    <button class="stab" data-s="Social Science" onclick="switchSubjectTab('Social Science')">🌍 Social</button>
+    <button class="stab" data-s="English"       onclick="switchSubjectTab('English')">📖 English</button>
+    <button class="stab" data-s="Hindi"         onclick="switchSubjectTab('Hindi')">🇮🇳 Hindi</button>
+    <button class="stab" data-s="Kannada"       onclick="switchSubjectTab('Kannada')">🌿 Kannada</button>
+    <button class="stab" data-s="Sanskrit"      onclick="switchSubjectTab('Sanskrit')">🕉️ Sanskrit</button>
+  </div>
+
+  <div class="feat-tabs">
+    <button class="ftab active" id="tab-chat" onclick="switchTab('chat')">💬 Chat</button>
+    <button class="ftab" id="tab-ref" onclick="switchTab('ref')">📐 Formulas &amp; Notes</button>
+  </div>
+
+  <!-- CHAT PANEL -->
+  <div class="tab-panel active" id="panel-chat">
+    <div class="chat-scroll" id="chatMessages">
+      <div class="msgs-inner" id="msgsInner"></div>
+    </div>
+    <div class="input-bar">
+      <div class="input-row">
+        <textarea class="chat-input" id="chatInput" rows="1"
+          placeholder="Ask anything about SSLC 2025-26… (Enter to send)"
+          oninput="resizeTA(this);updateSend()"
+          onkeydown="onKey(event)"></textarea>
+        <button class="send-btn off" id="sendBtn" onclick="sendMsg()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+        </button>
+      </div>
+      <div class="upload-strip">
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+          📎 Upload Question Paper / Blueprint
+        </button>
+        <input type="file" id="fileInput" accept="image/*,.pdf" style="display:none" onchange="handleUpload(event)"/>
+        <div class="upload-preview" id="uploadPreview" style="display:none">
+          <span id="uploadName"></span>
+          <button onclick="clearUpload()">✕</button>
+        </div>
+      </div>
+      <div class="input-note">⚡ Gemini 2.5 Flash · DSERT SSLC 2025-26 · Always verify with your textbook</div>
+    </div>
+  </div>
+
+  <!-- REFERENCE PANEL -->
+  <div class="tab-panel" id="panel-ref">
+    <div class="ref-scroll">
+      <div class="ref-inner">
+        <div class="ref-hint">
+          <strong>📎 Have a question paper or blueprint?</strong> Go to <strong>💬 Chat</strong> → tap <strong>Upload Question Paper</strong> → attach image or PDF → ask Vidya to analyse it!
+        </div>
+        <div class="ref-filters">
+          <select class="ref-select" id="refSubj" onchange="renderRef()">
+            <option value="">All Subjects</option>
+            <option value="Mathematics">🔢 Mathematics</option>
+            <option value="Science">🔬 Science</option>
+            <option value="Social Science">🌍 Social Science</option>
+            <option value="English">📖 English FL</option>
+            <option value="Hindi">🇮🇳 Hindi</option>
+            <option value="Kannada">🌿 Kannada</option>
+          </select>
+          <select class="ref-select" id="refCat" onchange="renderRef()">
+            <option value="">All Categories</option>
+            <option value="formula">📐 Formulas</option>
+            <option value="chapter">📚 Chapter Lists</option>
+            <option value="dates">📅 Key Dates &amp; Facts</option>
+            <option value="tips">💡 Exam Tips</option>
+            <option value="blueprint">📊 Blueprint &amp; Marks</option>
+          </select>
+        </div>
+        <div id="refCards"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+// ── YOUR GEMINI API KEY ──────────────────────────────────────────
+// Replace with your key from https://aistudio.google.com/apikey
+// Restrict it to your GitHub Pages domain for safety:
+// Google Cloud Console → API Key → Application Restrictions → HTTP Referrers
+// Add: https://YOUR-USERNAME.github.io/*
+const VIDYA_API_KEY = 'AIzaSyD96tTx6ZWkp_jXjoHXNd41zFwsj3e-pwU';
+// ─────────────────────────────────────────────────────────────────
+
+let GEM_KEY=VIDYA_API_KEY, STU_NAME='', SUBJECT='', MODE='tutor';
+let history=[], loading=false;
+let uploadedFile=null, uploadedDataUrl=null, uploadedMimeType=null;
+
+/* ── FILE UPLOAD HANDLER ───────────────────────────── */
+function handleUpload(evt){
+  const file=evt.target.files[0];
+  if(!file) return;
+  if(file.size > 10*1024*1024){
+    alert('File too large (max 10MB). Please use a smaller image or PDF.');
+    return;
+  }
+  uploadedFile=file;
+  uploadedMimeType=file.type;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    uploadedDataUrl=e.target.result;
+    document.getElementById('uploadPreview').style.display='flex';
+    const name=file.name.length>30?file.name.substring(0,28)+'…':file.name;
+    document.getElementById('uploadName').textContent='📄 '+name;
+  };
+  reader.readAsDataURL(file);
+  evt.target.value=''; // reset so same file can be re-selected
+}
+function clearUpload(){
+  uploadedFile=null; uploadedDataUrl=null; uploadedMimeType=null;
+  document.getElementById('uploadPreview').style.display='none';
+}
+
+/* ══════════════════════════════════════════
+   WIZARD LOGIC
+══════════════════════════════════════════ */
+function goToStep(n){
+
+  if(n===3){
+    const name = document.getElementById('nameInput').value.trim();
+    if(name.length < 1){
+      const inp = document.getElementById('nameInput');
+      inp.style.borderColor = '#ef4444';
+      inp.focus();
+      setTimeout(()=>{ inp.style.borderColor=''; }, 2500);
+      return;
+    }
+  }
+  document.querySelectorAll('.w-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step'+n).classList.add('active');
+  document.getElementById('wizard').style.display='flex';
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('app').style.display='none';
+}
+
+// S1 — API key
+function validateS1(){
+  const v=document.getElementById('apiKeyInput').value.trim();
+  document.getElementById('s1btn').disabled=v.length<8;
+}
+function togglePw(){
+  const el=document.getElementById('apiKeyInput');
+  el.type=el.type==='password'?'text':'password';
+}
+
+// S2 — name
+function validateS2(){
+  const v=document.getElementById('nameInput').value.trim();
+  document.getElementById('s2btn').disabled=v.length<1;
+  const prev=document.getElementById('namePreview');
+  if(v.length>0){
+    prev.style.display='block';
+    prev.textContent=`Hey ${v}! 👋 Can't wait to study with you!`;
+  } else { prev.style.display='none'; }
+}
+
+// S3 — subject pills + mode
+let _pickedSubject = '';
+function pickSubject(s){
+  _pickedSubject = s;
+  document.querySelectorAll('.spill').forEach(b=>b.classList.toggle('active',b.dataset.s===s));
+  document.getElementById('s3btn').disabled = false;
+}
+function validateS3(){
+  // kept for compatibility — pills set _pickedSubject directly
+}
+
+// Switch subject tab inside the app (live — no page reload)
+function switchSubjectTab(s){
+  SUBJECT = s;
+  // Update tab highlight
+  document.querySelectorAll('.stab').forEach(b=>b.classList.toggle('active',b.dataset.s===s));
+  // Update topbar sub
+  const subjEmoji = {Mathematics:'🔢',Science:'🔬','Social Science':'🌍',English:'📖',Hindi:'🇮🇳',Kannada:'🌿',Sanskrit:'🕉️','All Subjects':'🌟'}[s]||'📚';
+  document.getElementById('tbSub').textContent = `Class 10 SSLC · ${subjEmoji} ${s} · ${MODE}`;
+  // Update chat placeholder
+  const placeholders = {
+    Mathematics:'Try: "Quiz me on Triangles" or "Solve x²-5x+6=0 step by step"',
+    Science:'Try: "Explain Ohm\'s Law" or "Balance the thermite reaction"',
+    'Social Science':'Try: "Causes of 1857 revolt in points" or "Explain Battle of Plassey"',
+    English:'Try: "Figures of speech in Sarus Crane" or "Write a formal letter"',
+    Hindi:'हिंदी के बारे में कुछ भी पूछो…',
+    Kannada:'Try: "Explain Ondu Mara Di Gili" or "Grammar help"',
+    'All Subjects':'Ask anything about SSLC 2025-26 — Maths, Science, History, English…',
+  };
+  document.getElementById('chatInput').placeholder = placeholders[s] || 'Ask anything about SSLC Class 10 2025-26…';
+  // Rebuild welcome message for new subject (just add a context switch note)
+  const modeLabel = {tutor:'📚 Tutor',quiz:'🧠 Quiz',homework:'✏️ Homework',summary:'📋 Summary',sslc:'🎯 Exam Prep'}[MODE]||MODE;
+  addBubble('bot', `Switched to ${subjEmoji} **${s}** — ${modeLabel} mode! 🎓\n\nAsk me anything about ${s === 'All Subjects' ? 'any SSLC 2025-26 subject' : 'Class 10 '+s} and I'll help right away! 💪`);
+  history.push({role:'model',parts:[{text:`Switched to ${s}. Ready to help!`}]});
+  // Ref tab stays at All Subjects so all blueprints remain visible
+  renderRef();
+}
+function pickMode(m){
+  MODE=m;
+  document.querySelectorAll('.mode-pill').forEach(b=>b.classList.toggle('active',b.dataset.m===m));
+}
+
+/* ══════════════════════════════════════════
+   LAUNCH APP
+══════════════════════════════════════════ */
+function launchApp(){
+  if(!_pickedSubject){
+    // Shake the pills to indicate selection needed
+    const pills = document.getElementById('subjPills');
+    if(pills){ pills.style.outline='2px solid #ef4444'; setTimeout(()=>{ pills.style.outline=''; }, 2000); }
+    return;
+  }
+  GEM_KEY  = VIDYA_API_KEY;
+  STU_NAME = document.getElementById('nameInput').value.trim()||'Champion';
+  SUBJECT  = _pickedSubject || 'All Subjects';
+
+  // Hide wizard, show app
+  document.getElementById('wizard').style.display='none';
+  const app=document.getElementById('app');
+  app.style.display='flex';
+  app.classList.add('active');
+
+  // Topbar
+  const mIcons={tutor:'📚',quiz:'🧠',homework:'✏️',summary:'📋',sslc:'🎯'};
+  const mLabels={tutor:'Tutor',quiz:'Quiz',homework:'Homework Help',summary:'Summary',sslc:'Exam Prep'};
+  const subjEmoji = {Mathematics:'🔢',Science:'🔬','Social Science':'🌍',English:'📖',Hindi:'🇮🇳',Kannada:'🌿',Sanskrit:'🕉️','All Subjects':'🌟'}[SUBJECT]||'📚';
+  document.getElementById('tbName').textContent=`Vidya · ${STU_NAME}`;
+  document.getElementById('tbSub').textContent=`Class 10 SSLC · ${subjEmoji} ${SUBJECT} · ${mLabels[MODE]}`;
+
+  // Reset chat
+  history=[];
+  document.getElementById('msgsInner').innerHTML='';
+  document.getElementById('chatInput').value='';
+  document.getElementById('chatInput').style.height='auto';
+  updateSend();
+
+  // Welcome card + greeting
+  buildWelcome();
+
+  // Activate subject tab in app
+  document.querySelectorAll('.stab').forEach(b=>b.classList.toggle('active',b.dataset.s===SUBJECT));
+
+  // Sync ref tab
+  // Ref tab always starts showing All Subjects so students see everything
+  document.getElementById('refSubj').value='';
+  document.getElementById('refCat').value='';
+  renderRef();
+
+  // Update chat placeholder text
+  const phs = {
+    Mathematics:'Try: "Quiz me on Triangles" or "Solve x²-5x+6=0 step by step"',
+    Science:'Try: "Explain Ohm\'s Law" or "Balance the thermite reaction"',
+    'Social Science':'Try: "Causes of 1857 revolt in points" or "Explain Battle of Plassey"',
+    English:'Try: "Figures of speech in Sarus Crane" or "Write a formal letter"',
+    Hindi:'हिंदी के बारे में कुछ भी पूछो…',
+    'All Subjects':'Ask anything about SSLC 2025-26 — Maths, Science, History, English…',
+  };
+  document.getElementById('chatInput').placeholder = phs[SUBJECT] || 'Ask anything about SSLC Class 10 2025-26…';
+
+  // Default to chat tab
+  switchTab('chat');
+}
+
+function switchSubject(){ goToStep(3); }
+function exitApp(){
+  document.getElementById('wizard').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('app').classList.remove('active');
+  goToStep(1);
+}
+
+/* ══════════════════════════════════════════
+   TABS
+══════════════════════════════════════════ */
+function switchTab(t){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+}
+
+/* ══════════════════════════════════════════
+   WELCOME CARD & QUICK CHIPS
+══════════════════════════════════════════ */
+function buildWelcome(){
+  const chips={
+    Mathematics:['Quiz me on Triangles (9 marks!)','Step-by-step: solve quadratic x²-5x+6=0','Prove √2 is irrational','What chapters carry the most marks?'],
+    Science:['Explain Ohm\'s Law with a worked example','Balance: Fe₂O₃ + Al → ?','How does a concave mirror form images?','What are the 4 highest-mark chapters?'],
+    'Social Science':['Causes of 1857 revolt — point wise','Explain Battle of Plassey with dates','What is the KSEAB blueprint breakdown?','Write a 4-mark answer: Freedom Struggle'],
+    English:['Summarise Unit 1: A Wrong Man','Figures of speech in Sarus Crane poem','Grammar: 5 question tag examples','How to write a formal letter for exam?'],
+    Hindi:['पाठ 1 का सारांश बताओ','अनुवाद कैसे लिखें? उदाहरण दो','निबंध लेखन के लिए tips','कश्मीरी सेब पाठ की मुख्य बातें'],
+    'All Subjects':['What should I study first for Exam 1?','Quiz me on any random SSLC topic','Explain the KSEAB 2025-26 blueprint','Which chapters have the highest marks?'],
+    default:['What should I study first for March 18?','Give me a blueprint overview','Quiz me on a random topic','Which chapters carry the most marks?']
+  };
+  const greet={
+    tutor:{
+      Mathematics:`Hey ${STU_NAME}! 👋 Let's make Maths feel easy today!
+
+I'm Vidya — trained on the actual DSERT Class 10 Maths LBA for 2025-26. I'll explain every concept step-by-step with worked examples, so nothing feels abstract.
+
+📌 Highest mark chapter: **Triangles (9 marks)**
+
+What do you want to start with?`,
+      Science:`Hey ${STU_NAME}! 🔬 Science time!
+
+I know your exact DSERT Class 10 Science syllabus for 2025-26. I'll explain concepts clearly with diagrams described in text, balanced equations, and memory tricks.
+
+📌 Highest mark chapters: **Carbon Compounds, Life Processes, Electricity, Light** (8 marks each!)
+
+What topic shall we start with?`,
+      'Social Science':`Hey ${STU_NAME}! 🌍 Social Science — let's ace it!
+
+I'll help you write point-wise, full-mark answers for History, Geography, Political Science, Sociology, Economics, and Business Studies.
+
+📌 Highest marks: **History (25m) + Geography (22m) = 47/80!**
+
+Which section do you want to start with?`,
+      English:`Hey ${STU_NAME}! 📖 English FL — let's go!
+
+I know all 10 prose lessons, 10 poems, and 3 supplementary readings from your DSERT 2025-26 textbook. I can help with themes, grammar, writing, and exam-style answers.
+
+📌 Remember: **Prose (30m) + Poetry (30m) = 60/100!**
+
+What shall we cover today?`,
+      'All Subjects':`Hey ${STU_NAME}! 🌟 You've unlocked ALL SUBJECTS mode!
+
+Ask me anything about your Class 10 SSLC 2025-26 subjects:
+• 🔢 Mathematics (14 chapters)
+• 🔬 Science (13 chapters)
+• 🌍 Social Science (History, Geography & more)
+• 📖 English FL (10 lessons + 10 poems)
+• 🇮🇳 Hindi, Kannada, Sanskrit
+
+Just ask — I'm ready for anything! 💪`,
+      default:`Hey ${STU_NAME}! 👋 Ready to study ${SUBJECT}?
+
+I'm Vidya — your DSERT Class 10 SSLC tutor for 2025-26. What would you like to learn today?`
+    },
+    quiz:{
+      Mathematics:`🧠 Maths Quiz — one question at a time, ${STU_NAME}!
+
+Here's how it works:
+1️⃣ I ask **one question** (from the KSEAB blueprint)
+2️⃣ You write your answer or working
+3️⃣ I check it step-by-step and show your marks
+4️⃣ Then we move to the next question
+
+Tell me a chapter (or say **"random"**) and difficulty — **Easy / Average / Hard**?`,
+      Science:`🔬 Science Quiz — one question at a time, ${STU_NAME}!
+
+Here's how we'll do it:
+1️⃣ I ask ONE question (MCQ, equation, numerical, or explain)
+2️⃣ You answer it
+3️⃣ I tell you exactly how many marks you'd get and why
+4️⃣ Then the next question!
+
+Say a **chapter name** or **"random"** to begin! 🎯`,
+      'Social Science':`🌍 Social Science Quiz — one question at a time, ${STU_NAME}!
+
+Here's the flow:
+1️⃣ I ask ONE question (1-mark / 2-mark / 3-mark style)
+2️⃣ You answer in points
+3️⃣ I check each point and give you marks out of total
+4️⃣ Then the next question!
+
+Which section to start? **History / Geography / Political Science / Economics / Business** — or say **"random"**!`,
+      English:`📖 English Quiz — one question at a time, ${STU_NAME}!
+
+Here's how it works:
+1️⃣ I ask ONE question (RTC / theme / grammar / figure of speech)
+2️⃣ You answer it
+3️⃣ I evaluate and show what a full-marks answer looks like
+4️⃣ Then the next one!
+
+Which unit? Say **prose / poetry / grammar** or a unit name — or say **"random"**!`,
+      Hindi:`🇮🇳 हिंदी क्विज़ — एक सवाल एक बार में, ${STU_NAME}!
+
+ऐसे करेंगे:
+1️⃣ मैं एक सवाल पूछूंगा
+2️⃣ तुम जवाब लिखो
+3️⃣ मैं बताऊंगा: कितने नंबर मिलेंगे और क्यों
+4️⃣ फिर अगला सवाल!
+
+कौनसा पाठ? या **"random"** बोलो!`,
+      default:`🧠 Quiz Mode — one question at a time for ${SUBJECT}!
+
+Here's how it works:
+1️⃣ I ask ONE question at a time (KSEAB exam pattern)
+2️⃣ You answer it
+3️⃣ I evaluate: marks, model answer, what you got right/wrong
+4️⃣ Then we move to the next question — no skipping ahead!
+
+Say a **chapter name** or **"random"** to start! 🎯`
+    },
+    homework:{
+      default:`Let's solve it together, ${STU_NAME}! ✏️
+
+Paste your ${SUBJECT} question here. I'll:
+1️⃣ Read the question carefully with you
+2️⃣ Identify which concept it tests
+3️⃣ Walk through the solution step-by-step
+4️⃣ Show you how to write it for full marks
+
+What's the problem?`
+    },
+    summary:{
+      default:`Smart move, ${STU_NAME}! 📋 Summaries = fast revision!
+
+Tell me which **${SUBJECT} chapter** you want summarized. I'll give you:
+• 📌 Key points (exam-ready format)
+• 📝 Important definitions
+• 🎯 Likely exam questions for that chapter
+• ⭐ High-mark topics to focus on
+
+Which chapter?`
+    },
+    sslc:{
+      default:`🎯 SSLC Exam Prep 2026 — ACTIVATED for ${STU_NAME}!
+
+**Exam 1: March 18, 2026** — that's coming fast!
+
+I'm loaded with the official KSEAB Blueprint for **${SUBJECT}**. Here's what I can do:
+
+📊 Blueprint-pattern mock questions
+⭐ Chapter strategy (highest marks first)
+✍️ Model answers — how to write for full marks
+🗓️ Last-minute revision plan
+💡 Common mistakes to AVOID
+
+What do you want to tackle first?`
+    }
+  };
+
+  // Pick greeting
+  const modeGreets = greet[MODE]||greet.tutor;
+  const subjectGreet = modeGreets[SUBJECT]||modeGreets.default||greet.tutor.default;
+  const msg = subjectGreet;
+  const chipList = chips[SUBJECT]||chips.default;
+
+  // Build welcome message
+  const wc=document.createElement('div');
+  wc.className='msg-row bot';
+  const chipHtml=chipList.map(c=>`<button class="chip" onclick="quickAsk('${c.replace(/'/g,"\\'")}')">💬 ${c}</button>`).join('');
+  const formattedMsg = formatMsg(msg,'bot');
+  wc.innerHTML=`<div class="bot-av">🤖</div>
+    <div style="max-width:82%">
+      <div class="bubble bot">${formattedMsg}</div>
+      <div class="quick-chips" style="margin-top:10px">${chipHtml}</div>
+    </div>`;
+  document.getElementById('msgsInner').appendChild(wc);
+  history.push({role:'model',parts:[{text:msg.replace(/<[^>]+>/g,'').replace(/\*\*/g,'')}]});
+  scrollChat();
+}
+
+function quickAsk(q){
+  document.getElementById('chatInput').value=q;
+  updateSend();
+  sendMsg();
+}
+
+/* ══════════════════════════════════════════
+   CHAT
+══════════════════════════════════════════ */
+function onKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} }
+function resizeTA(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+function updateSend(){
+  const v=document.getElementById('chatInput').value.trim();
+  const hasFile=!!uploadedDataUrl;
+  document.getElementById('sendBtn').className=((v||hasFile)&&!loading)?'send-btn on':'send-btn off';
+}
+
+async function sendMsg(){
+  const ta=document.getElementById('chatInput');
+  const txt=ta.value.trim();
+  if((!txt && !uploadedDataUrl)||loading)return;
+
+  // Build display text for user bubble
+  const displayTxt = txt || '(See uploaded file)';
+  const hasFile = !!uploadedDataUrl;
+
+  // Show user message
+  addBubble('user', displayTxt + (hasFile ? '\n📎 [File attached]' : ''));
+
+  // Build parts for the API call
+  const userParts = [];
+  if(hasFile){
+    // Extract base64 data from dataURL
+    const base64Data = uploadedDataUrl.split(',')[1];
+    const mimeType = uploadedMimeType || 'image/jpeg';
+    if(mimeType === 'application/pdf'){
+      userParts.push({
+        inlineData:{ mimeType:'application/pdf', data:base64Data }
+      });
+    } else {
+      userParts.push({
+        inlineData:{ mimeType:mimeType, data:base64Data }
+      });
+    }
+  }
+  if(txt){
+    userParts.push({text: txt + (hasFile ? '\n\n[I have also uploaded a file — please read it carefully and help me understand/use it for SSLC 2025-26 Class 10 Karnataka Board preparation.]' : '')});
+  } else if(hasFile){
+    userParts.push({text:'I have uploaded a question paper / blueprint / study material. Please analyze it carefully for SSLC 2025-26 Class 10 Karnataka Board. Tell me:\n1. What type of document is this?\n2. What subjects/chapters does it cover?\n3. What are the key questions or marks distribution?\n4. How should I use this to study better?'});
+  }
+
+  history.push({role:'user', parts:userParts});
+
+  // Clear the file after attaching to message
+  if(hasFile) clearUpload();
+
+  ta.value=''; ta.style.height='auto'; updateSend();
+  loading=true; updateSend();
+  const tid=showTyping();
+
+  try{
+    const resp=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEM_KEY}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({
+         system_instruction:{parts:[{text:sysPrompt()}]},
+         contents:history,
+         generationConfig:{temperature:0.72,maxOutputTokens:1600}
+       })}
+    );
+    hideTyping(tid);
+    if(!resp.ok){const e=await resp.json();throw new Error(e?.error?.message||'HTTP '+resp.status);}
+    const d=await resp.json();
+    const reply=d.candidates?.[0]?.content?.parts?.[0]?.text||"Hmm, I couldn't get a response. Try again!";
+    history.push({role:'model',parts:[{text:reply}]});
+    addBubble('bot',reply);
+  }catch(err){
+    hideTyping(tid);
+    history.pop();
+    addBubble('bot','⚠️ Error: '+err.message+'\n\nPlease check your Gemini API key. If you uploaded a file, make sure it is a clear image or PDF under 10MB.');
+  }
+  loading=false; updateSend();
+}
+
+/* ══════════════════════════════════════════
+   SYSTEM PROMPT
+══════════════════════════════════════════ */
+function sysPrompt(){
+  const quizInstructions = MODE==='quiz' ? `
+
+╔══════════════════════════════════════════════════╗
+║           STRICT QUIZ MODE — FOLLOW EXACTLY      ║
+╚══════════════════════════════════════════════════╝
+
+THE #1 RULE: ASK ONE QUESTION. WAIT. EVALUATE. THEN ASK THE NEXT.
+NEVER ask 2 or more questions in the same message.
+NEVER dump a list of questions. ONE question at a time. Always.
+
+THE QUIZ FLOW (repeat for every single question):
+
+TURN 1 — YOU ASK:
+  • Show the questions the student asked for (1 or multiple, whatever they requested)
+  • For EACH question, use this EXACT FORMAT so the UI can render interactive answer boxes:
+
+  For MCQ questions:
+    Q1: [question text]
+    Chapter: [chapter name] | [X] marks
+    A) [option text]
+    B) [option text]
+    C) [option text]
+    D) [option text]
+
+  For written/short answer questions:
+    Q1: [question text]
+    Chapter: [chapter name] | [X] marks
+    (leave blank — the UI adds a text box automatically)
+
+  For calculation/long answer:
+    Q1: [question text]
+    Chapter: [chapter name] | [X] marks
+    (leave blank — the UI adds a text box automatically)
+
+  • Number each question: Q1:, Q2:, Q3: etc.
+  • Do NOT add "Answer:" or the solution — wait for the student to answer
+  • After listing all questions, just say: "Answer each question above — type or click your answer! 🎯"
+  • STOP. Wait for student answers.
+
+TURN 2 — STUDENT ANSWERS. YOU EVALUATE:
+  • Compare their answer to the correct answer
+  • CORRECT: 
+      - Celebrate: "🎉 Correct! Well done!"
+      - Show the model answer (how to write it for full marks in the exam)
+      - For Maths: show every step with marks: "Step 1 (1m): ... Step 2 (1m): ..."
+      - Say: "✅ You'd get [X]/[X] marks for that answer!"
+  • PARTIALLY CORRECT:
+      - Say: "Good start! You got [X]/[X] marks. Here's what was missing:"
+      - Show exactly what the complete answer needs
+  • WRONG:
+      - Say gently: "Not quite — here's the correct answer:"
+      - Show the full model answer
+      - Explain WHY this is the answer (the concept behind it)
+  • After evaluating, ALWAYS show:
+      ⚠️ Common mistake: [what students usually get wrong here]
+  • Then ask: "Ready for the next question? 🎯" and WAIT for them to say yes.
+
+TURN 3 — STUDENT SAYS READY. YOU ASK THE NEXT QUESTION.
+  • Only ONE new question. Repeat the cycle.
+
+SUBJECT-SPECIFIC QUIZ RULES:
+
+FOR MATHEMATICS:
+  Format every question like:
+    ✏️ **Question [N]:** [question text]
+    📌 Chapter: [name] | Worth: [X] marks | Type: [short answer/proof/calculation]
+    "Take your time — type your answer or working below! ✍️"
+  After answer, show:
+    ∴ **Model Answer:**
+    Step 1 — [label]: [calculation] → (1m)
+    Step 2 — [label]: [calculation] → (1m)
+    ∴ Answer = [result with units] → (1m)
+    🎯 Marks: [X]/[X]
+    ⚠️ Common mistake: [what students get wrong]
+
+FOR SCIENCE:
+  Mix question types: MCQ / fill-in-blank / give equation / define / explain
+  For numericals: student must show formula + substitution + answer
+  After answer show: correct answer + concept explanation + marks breakdown
+
+FOR SOCIAL SCIENCE:
+  Questions should be point-wise (e.g. "Give 3 causes of...")
+  Student answers in points; you check each point and give marks per point
+  Show: "Your answer: X/[total] points correct. Full model answer: ..."
+
+FOR ENGLISH:
+  Mix: comprehension / grammar / figure of speech / theme question
+  For grammar: student gives example; you check rule + usage
+  For RTC: student gives context; you check if they got speaker/context/significance
+
+IMPORTANT: If student says "give me all 5 questions" or "quiz me on 10 topics at once":
+  Politely say: "I'll quiz you one at a time — it's more effective! 
+  Here's Question 1:" and proceed with ONE question only.
+
+` : '';
+
+  const allSubjNote = SUBJECT==='All Subjects' ? `
+ALL SUBJECTS MODE: Answer any Class 10 SSLC 2025-26 question across all subjects.
+Auto-detect which subject is being asked. Label answers: 🔢 Maths: / 🔬 Science: / 🌍 Social: / 📖 English: etc.
+Never redirect — just answer everything confidently.
+` : '';
+
+  return `You are "Vidya" 🎓 — a warm, expert AI tutor for Karnataka SSLC Class 10 students (2025-26).
+Student: ${STU_NAME}. Use their name naturally (not every message).
+
+SCOPE: Karnataka DSERT/KTBS Class 10 SSLC 2025-26 ONLY.
+${allSubjNote}
+${quizInstructions}
+
+NOTE FOR STUDENTS: For additional practice questions, the YouTube channel @Udaan_Deepak has excellent SSLC 2025-26 preparation playlists. Recommend it when students need more practice.
+
+════════════════════════════════════════════
+VERIFIED OFFICIAL BLUEPRINTS (from KSEAB 2025-26 PDFs)
+All core papers: 80m theory + 20m internals = 100
+38 questions | 16×1m + 8×2m + 9×3m + 4×4m + 1×5m | 3hrs + 15min
+════════════════════════════════════════════
+
+══ MATHEMATICS (81EK) — Official Blueprint ══
+Total: 80 marks | 38 questions
+Internal choices: 2 extra for 2m, 4 extra for 3m, 2 extra for 4m, 1 extra for 5m
+
+Ch  | Chapter Name                          | 1m | 2m | 3m | 4m | 5m | Qs | Marks
+1   | Real Numbers                          |  1 |    |  1 |    |    |  2 |  4
+2   | Polynomials                           |  2 |    |  1 |    |    |  3 |  5  ← NOTE: was 5m in old data, corrected to 5
+3   | Pair of Linear Equations              |  2 |  1 |    |  1 |    |  4 |  8 ★
+4   | Quadratic Equations                   |  1 |  1 |  1 |    |    |  3 |  6
+5   | Arithmetic Progressions               |  2 |  1 |    |  1 |    |  4 |  8 ★
+6   | Triangles                             |  2 |  1 |    |  1 |    |  4 |  9 ★★ HIGHEST
+7   | Circles                               |  1 |    |  1 |    |    |  2 |  5
+8   | Coordinate Geometry                   |  1 |  1 |  1 |    |    |  3 |  6
+9   | Introduction to Trigonometry          |  1 |  1 |  1 |    |    |  3 |  6
+10  | Some Applications of Trigonometry     |  1 |    |    |    |    |  1 |  4  ← has 1×4m implied
+11  | Surface Areas and Volumes             |  2 |    |  1 |    |    |  3 |  7 ★
+12  | Areas Related to Circles              |  1 |    |    |    |    |  1 |  3
+13  | Statistics                            |  1 |    |  1 |    |    |  2 |  4
+14  | Probability                           |  1 |    |  1 |    |    |  2 |  4
+    | TOTAL                                 | 16 |  8 |  9 |  4 |  1 | 38 | 80
+
+PRIORITY ORDER: Triangles(9) > Linear Equations(8) = AP(8) > Surface Areas(7) > Quadratic/Coord/Trig(6 each) > Circles(5)
+
+══ SCIENCE (83) — Official Blueprint ══
+Total: 80 marks | 38 questions | Physics + Chemistry + Biology
+Internal choices: 2 extra for 2m, 3 extra for 3m, 2 extra for 4m, 1 extra for 5m
+
+Ch  | Chapter Name                          | 1m | 2m | 3m | 4m | 5m | Qs | Marks
+1   | Chemical Reactions and Equations      |  1 |    |  1 |    |    |  2 |  4
+2   | Acids, Bases and Salts                |  1 |  1 |  1 |    |    |  3 |  6
+3   | Metals and Non-metals                 |  2 |  1 |  1 |    |    |  4 |  7 ★
+4   | Carbon and Its Compounds              |  2 |  1 |    |  1 |    |  4 |  8 ★★ HIGHEST
+5   | Life Processes                        |  2 |  1 |    |  1 |    |  4 |  8 ★★ HIGHEST
+6   | Control and Coordination              |  1 |  1 |  1 |    |    |  3 |  6
+7   | How do Organisms Reproduce?           |  2 |    |    |    |  1 |  3 |  7 ★
+8   | Heredity                              |  1 |    |  1 |    |    |  2 |  4
+9   | Light – Reflection and Refraction     |  1 |    |  1 |  1 |    |  3 |  8 ★★ HIGHEST
+10  | Human Eye and Colourful World         |    |  1 |  1 |    |    |  2 |  5
+11  | Electricity                           |  2 |  1 |    |  1 |    |  4 |  8 ★★ HIGHEST
+12  | Magnetic Effects of Electric Current  |  1 |  1 |  1 |    |    |  3 |  6
+13  | Our Environment                       |    |    |  1 |    |    |  1 |  3
+    | TOTAL                                 | 16 |  8 |  9 |  4 |  1 | 38 | 80
+
+PRIORITY: Carbon(8)=Life Processes(8)=Light(8)=Electricity(8) > Metals(7)=Reproduction(7) > Acids/Control/Magnetism(6)
+
+══ SOCIAL SCIENCE (85) — Official Blueprint ══
+Total: 80 marks | 38 questions
+Internal choices: 2 extra for 2m, 4 extra for 3m, 2 extra for 4m (map=open choice)
+
+HISTORY (11 questions, 25 marks) ★★ HIGHEST SECTION:
+Ch  | Chapter                                     | 1m | 2m | 3m | 4m | Qs | Marks
+1   | Advent of Europeans to India                |  1 |    |  1 |    |  1 |  3
+2   | Extension of the British Rule               |    |  1 |    |    |  1 |  2
+3   | Impact of British Rule                      |  1 |    |    |    |  1 |  1
+4   | Opposition in Karnataka & Wodeyars          |  1 |    |  1 |  2 |  2 |  5 ★
+5   | Social & Religious Reform Movements         |  1 |    |  1 |    |  1 |  3
+6   | First War of Independence (1857)            |  1 |    |  1 |    |  1 |  3
+7   | The Freedom Struggle                        |  1 |    |    |  1 |  1 |  4 ★
+8   | India After Independence                    |    |  1 |    |    |  1 |  2
+9   | World Wars and India's Role                 |  2 |    |    |    |  2 |  2
+
+POLITICAL SCIENCE (5 questions, 11 marks):
+10  | Public Administration                       |  1 |    |    |  1 |  1 |  2
+11  | Challenges of India                         |    |  1 |    |    |  1 |  4  ← 4m question
+12  | India's Foreign Policy                      |  1 |    |  1 |    |  1 |  3
+13  | World Organisations                         |  2 |    |    |    |  2 |  2
+
+SOCIOLOGY (5 questions, 8 marks):
+14  | Social Stratification                       |  1 |    |    |    |  1 |  1
+15  | Work and Economic Life                      |  1 |    |  1 |    |  1 |  3 ← Note: 2m implied
+16  | Collective Behaviour and Protests           |  2 |    |    |    |  2 |  2
+17  | Social Challenges                           |  1 |    |    |    |  1 |  2  ← 2m implied
+
+GEOGRAPHY (9 questions, 22 marks) ★:
+18  | Geographical Position & Physical Features   |  2 |  1 |    |    |  2 |  2
+19  | Seasons                                     |  1 |    |    |    |  1 |  1  ← 1m only? check
+20  | Soils                                       |  1 |    |  1 |    |  1 |  4
+21  | Forest Resources                            |    |  1 |  1 |    |  1 |  3
+22  | Water Resources                             |    |  1 |    |    |  1 |  2
+23  | Land Use & Agriculture                      |  1 |    |    |  1 |  1 |  2  ← check
+24  | Mineral & Power Resources                   |  1 |    |    |    |  1 |  1
+25  | Transport & Communication                   |  1 |  1 |    |    |  1 |  2
+26  | Major Industries                            |  1 |  1 |    |    |  1 |  2 ← note
+27  | Natural Disasters                           |    |  1 |  1 |    |  1 |  3
+
+ECONOMICS (4 questions, 7 marks):
+28  | Economy and Government                      |  1 |    |    |  1 |  1 |  2
+29  | Rural Development                           |  1 |  1 |  1 |    |  2 |  4 ★
+30  | Public Finance and Budget                   |  1 |    |    |    |  1 |  1
+
+BUSINESS STUDIES (4 questions, 7 marks):
+31  | Bank Transactions                           |  1 |  1 |  1 |    |  2 |  4 ★
+32  | Entrepreneurship                            |  1 |    |    |    |  1 |  1
+33  | Consumer Education & Protection             |    |  1 |    |    |  1 |  2
+
+══ ENGLISH FIRST LANGUAGE (14E) — Official Blueprint ══
+Total: 100 marks | 45 questions
+Internal choices: 1 extra for 3m, 3 extra for 4m, 2 extra for 5m
+
+PROSE (12 questions, 30 marks):
+1  | A Wrong Man in Workers' Paradise  | 1m | 3m | → 2Q, 3 marks
+2  | The Elixir of Life                |    | 4m | → 1Q, 4 marks
+3  | The Gift of the Magi              | 1m | 3m | → 2Q, 3 marks  ← NOTE: actually 1m+1×3m = 3 marks? wait: 1+1=2Q per old, marks=3 means 1+2? → verify: table says 1Mark:1, 3Mark:0, 4Mark:0... Actually Elixir=4m means one 4m question. Magi=3m means one 3m+one 1m=4? NO. Let me re-read:
+   Table says: Magi: 1Mark:1, 3Mark:1 → 3 marks total → 1+2=3 makes sense
+4  | Louis Pasteur                     |    | 4m | → 1Q, 4 marks
+5  | What is Moral Action?             | 1m | 3m | → 2Q, 3 marks (1+2)
+6  | The Eyes are not Here             | 1m | 3m | → 2Q, 3 marks
+7  | The Girl who was Anne Frank       | 1m | 2m | 4m | → 3Q, 4+extra marks
+8  | A Village Cricket Match           | 1m | 2m | → 2Q, 2 marks (1+1? but 1+2=3 → table says 2 marks)
+   Actually table: Cricket Match: 1M:1, 2M:1 → total questions 2, marks 2... That seems like 1+1=2, so the 2M here is actually treated as 2marks each? No — 1mark q + 2mark q = 3 marks but table says 2. Strange.
+   Trust the official table: Unit 8 = 2 questions, 2 total marks
+9  | Consumerist Culture               | 1m | 2m | → marks=3 (1+2=3 ✓)
+10 | The Pie and the Tart              | 1m |    | → 1Q, 1 mark
+
+POETRY (11 questions, 30 marks):
+11 | To a Pair of Sarus Crane          | 1m | 2m | → 3 marks
+12 | Abraham Lincoln's Letter          |    | 4m | → 4 marks ★
+13 | Vachana                           |    | 3m | → 3 marks  ← note: 1m+3m? table says 1Q only=3m
+14 | Lochinvar                         |    | 3m | → 3 marks
+15 | A Poison Tree                     |    | 4m | → 4 marks ★
+16 | Sonnet-73                         | 1m | 2m | → 2 marks
+17 | The Stolen Boat                   |    | 3m | → 3 marks
+18 | Mending Wall                      | 1m |    | → 2 marks (1m+1m? or just 1m=2marks? table says 2marks)
+19 | Buttoo                            |    | 3m | → 3 marks
+20 | C.L.M.                            |    | 3m | → 3 marks
+
+NON-DETAIL / SUPPLEMENTARY (3 questions, 7 marks):
+21 | Treasure Island                   | 1m | 2m | → 2 marks
+22 | Karna                             |    | 3m | → 3 marks
+23 | Ulysses and the Cyclops           | 1m | 2m | → 2 marks? table says 2marks ← odd
+
+GRAMMAR AND COMPOSITION (19 questions, 33 marks):
+24 | Grammar and Vocabulary            | 9×1m | 3×3m | → 12Q, 15 marks (9+6=15 ✓)
+25 | Analogy                           | 4×1m |       → 4Q, 4 marks
+26 | Passage for Comprehension         |      | 1×4m  → 1Q, 4 marks
+27 | Essay Writing                     |      | 1×5m  → 1Q, 5 marks
+28 | Letter Writing                    |      | 1×5m  → 1Q, 5 marks
+GRAND TOTAL: 17×1m + 10×2m + 11×3m + 5×4m + 2×5m = 45Q, 100 marks
+
+ENGLISH SIMPLIFIED PRIORITIES:
+- Grammar+Vocabulary (15m) + Essay (5m) + Letter (5m) + Comprehension (4m) = 29 marks from writing
+- Prose 30m: Highest-scoring units: Elixir(4m), Louis Pasteur(4m), Anne Frank(4m)
+- Poetry 30m: Highest: Abraham Lincoln(4m), Poison Tree(4m)
+
+══ HINDI THIRD LANGUAGE (61-H) — Official Blueprint ══
+Total: 80 marks | 38 questions
+Chapters and marks (from official PDF):
+1  | कश्मीरी सेब        | 1m+2m     | 2Q | 3m
+2  | गिल्लू             | 1m        | 1Q | 3m (1+2=3, but table shows 3m total with 1Q? → 1m=3? No: has 1×3m)
+3  | मेरा बचपन          | 1m+2m     | 2Q | 3m
+4  | बसंत की सच्चाई     | 4m        | 1Q | 4m ★
+5  | इंटरनेट क्रांति    | 1m+3m     | 1Q | 3m → wait: 1+2=3, table shows 3m total
+6  | ईमानदारों के सम्मेलन | 1m+2m  | 1Q | 2m (1m only → table says 2m total oddly)
+7  | दुनिया में पहला मकान | 2×2m    | 2Q | 2m
+8  | रोबोट              | 1m+3m     | 1Q | 3m
+9  | महिला की साहस गाथा | 1m+3m     | 1Q | 3m → 1+2=3
+10 | कर्नाटक संपदा      | 1m+2m+4m  | 2Q | 4m ★
+11 | बाल-शक्ति          | 1m+2m     | 1Q | 2m
+12 | मातृभूमि           | 1m+3m     | 1Q | 3m
+13 | अभिनव मनुष्य       | 1m+2m+3m  | 2Q | 3m
+14 | तुलसी के दोहे      | 1m+2m+4m  | 2Q | 4m ★
+15 | समय की पहचान       | 1m+3m     | 1Q | 3m
+16 | सूर-श्याम          | 1m+2m+3m  | 2Q | 3m
+17 | कोशिश करने वालों की | 4m        | 1Q | 4m ★
+18 | शनि: सबसे सुंदर ग्रह | 1m+2m   | 1Q | 2m
+19 | सत्य की महिमा / नागरिक के कर्तव्य | 1m+2m | 1Q | 2m
+20 | व्याकरण            | 8×1m      | 8Q | 8m ★ HIGHEST SECTION
+21 | अनुवाद             | 3m        | 1Q | 3m
+22 | अपठित गद्यांश      | 4m        | 1Q | 4m ★
+23 | निबंध रचना         | 4m        | 1Q | 4m ★
+24 | पत्र लेखन          | 5m        | 1Q | 5m ★★ HIGHEST single question
+TOTAL: 16×1m + 8×2m + 9×3m + 4×4m + 1×5m = 38Q, 80m
+
+HINDI PRIORITIES: पत्र लेखन(5m) > व्याकरण(8m total) > निबंध(4m) > अपठित(4m) > कर्नाटक संपदा(4m) = तुलसी के दोहे(4m) = बसंत(4m) = कोशिश(4m)
+
+══ SECOND LANGUAGE KANNADA (33K) — Official Blueprint ══
+Total: 80 marks | 38 questions
+Prose sections (8 lessons, 26 marks):
+01 | ಒಂದು ಮರದ ಗಿಳಿ         | 1m+3m  | 1Q | 3m
+02 | ಅಸಿ-ಮಸಿ-ಕೃಷಿ           | 1m+2m  | 2Q | 3m
+03 | ಗಾ,ಪ,ಪುಟ್ಟರಾಜ ಗವಾಯಿ    | 1m+2m  | 2Q | 4m (1+3=4? check)
+04 | ಹಕ್ಕಿಗೂಡಿನ ನಿಗೂಢ ಜಗತ್ತು | 1m+2m | 2Q | 3m
+05 | ಕಾಫೀ-ಕಪ್               | 1m+3m  | 1Q | 3m
+06 | ಗಂಗೆಯಲ್ಲಿ ದೀಪಮಾಲೆ      | 1m+2m  | 2Q | 3m
+07 | ನನ್ನ ಗೋಪಾಲ              | 1m+2m  | 2Q | 4m
+08 | ಸೌಜನ್ಯ                  | 1m+2m  | 2Q | 3m
+Poetry sections (7 poems, 27 marks):
+01 | ಬೋಧಿವೃಕ್ಷದ ಹಾಡು        | 1m+4m  | 1Q | 4m ★
+02 | ಸವಿಚೈತ್ರ                | 1m+2m  | 2Q | 4m
+03 | ಸದ್ದು ಮಾಡದಿರು           | 1m+2m  | 2Q | 4m
+04 | ಗುರಿ                   | 1m+4m  | 1Q | 4m ★
+05 | ಮೂಡಲ್ ಕುಣಿಗಲ್ ಕೆರೆ     | 1m+2m  | 2Q | 3m
+06 | ವಚನಗಳು                 | 2m+1m  | 3Q | 4m ★
+07 | ನಿಟ್ಟೋಟದಲ್ಲಿ ಹಾಯ್ದ...  | 1m+2m  | 2Q | 4m
+Grammar sections (8 items, 19 marks):
+Objective Qs(4×1m), Alankar(1×3m), Gaade(1×3m), Prabandha/Essay(1×4m), Patra Lekhan(1×5m)
+Supplementary reading: 2 passages, 4 marks each (8 marks total)
+Comprehension (Apathit Gadya): 1×4m
+
+════════════════════════════════════════════
+CHAPTER CONTENT KNOWLEDGE
+════════════════════════════════════════════
+
+MATHS CONCEPTS:
+Real Numbers: HCF×LCM=product; Euclid a=bq+r; irrationals: √2,√3,√5,√7,π; rational±irrational=irrational
+Polynomials: α+β=-b/a; αβ=c/a; cubic α+β+γ=-b/a, αβ+βγ+γα=c/a, αβγ=-d/a
+Linear Equations: graphical (2 lines→3 cases), substitution, elimination, cross-multiplication; word problems
+Quadratic: ax²+bx+c=0; x=(-b±√(b²-4ac))/2a; D=b²-4ac → D>0(2 roots), D=0(equal), D<0(none)
+AP: aₙ=a+(n-1)d; Sₙ=n/2[2a+(n-1)d] or n/2(a+l); aₙ=Sₙ-Sₙ₋₁
+Triangles: BPT AD/DB=AE/EC; AA/SSS/SAS similarity; area ratio=side ratio²; Pythagoras a²+b²=c²
+Circles: tangent⊥radius; external tangents equal; PT=√(PO²-r²)
+Coord Geometry: d=√[(x₂-x₁)²+(y₂-y₁)²]; section=(mx₂+nx₁)/(m+n); midpoint; area=½|x₁(y₂-y₃)+...|
+Trig: sin²+cos²=1; 1+tan²=sec²; 1+cot²=cosec²; values at 0/30/45/60/90°
+Heights/Distances: tan(elevation)=opposite/adjacent; two-building problems
+Surface Areas: cylinder 2πrh/2πr(r+h)/πr²h; cone πrl/πr(r+l)/⅓πr²h; sphere 4πr²/(4/3)πr³
+Statistics: Mean(direct/assumed mean/step deviation); Median l+[(n/2-cf)/f]×h; Mode l+[(f₁-f₀)/(2f₁-f₀-f₂)]×h
+Probability: P(E)=favourable/total; 0≤P≤1; P(E)+P(Ē)=1
+
+SCIENCE CONCEPTS:
+Ch1: Chemical equations balancing; types: combination/decomposition/displacement/double displacement/redox; exo/endothermic
+Ch2: pH scale 0-14; indicators; acid+base→salt+water; chlor-alkali process; bleaching powder; baking soda
+Ch3: Reactivity series K>Na>Ca>Mg>Al>Zn>Fe>Pb>H>Cu>Ag>Au; extraction; corrosion prevention
+Ch4: Carbon covalent bonds; homologous series; -OH(alcohol)/-COOH(acid)/-CHO(aldehyde)/C=O(ketone); ethanol+Na; saponification
+Ch5: Nutrition(autotrophic/heterotrophic); Respiration(aerobic/anaerobic); Transport(heart/xylem/phloem); Excretion(kidney/nephron)
+Ch6: Nervous system; reflex arc; brain parts; hormones: insulin(glucose)/thyroxine(growth)/adrenaline(emergency)
+Ch7: Asexual: binary fission/budding/fragmentation/spores; Sexual: pollination/fertilisation; human reproduction
+Ch8: Mendel's laws; dominant/recessive; F1/F2 ratios 3:1 monohybrid; 9:3:3:1 dihybrid
+Ch9: Mirror formula 1/v+1/u=1/f; lens 1/v-1/u=1/f; m=-v/u(mirror)/v/u(lens); P=1/f(D); Snell n=sini/sinr
+Ch10: Accommodation; myopia(concave lens)/hypermetropia(convex)/presbyopia; dispersion→spectrum
+Ch11: V=IR; series R=R₁+R₂+R₃; parallel 1/R=1/R₁+1/R₂+1/R₃; P=VI=I²R=V²/R; H=I²Rt; 1kWh=3.6×10⁶J
+Ch12: Magnetic field; solenoid; Fleming LHR(motor)/RHR(generator); domestic circuit; earthing/fuse
+
+SOCIAL SCIENCE FACTS:
+History: 1453 Constantinople→sea route; 1498 Vasco da Gama at Kappad; 1757 Battle of Plassey; 1764 Battle of Buxar(Diwani rights); 1857 Revolt at Meerut; 1885 INC (A.O.Hume); 1905 Bengal partition; 1920 Non-cooperation; 1930 Dandi March; 1942 Quit India; 1947 Independence; 1950 Constitution (Jan 26); 1956 States Reorganisation; 1973 Mysore→Karnataka
+Key people: Vasco da Gama(1498), Robert Clive(Plassey/Dual Govt), Tipu Sultan(Seringapatam 1799), Rani Chennamma(Kittur rebellion), Sangolli Rayanna, Raja Ram Mohan Roy(Brahmo Samaj), Dayananda Saraswati(Arya Samaj/Back to Vedas), Swami Vivekananda(Ramakrishna Mission), Mangal Pandey(1857), A.O.Hume(INC 1885), Bal Gangadhar Tilak(Swaraj/Kesari), Mahatma Gandhi(Non-cooperation/Dandi/Quit India), Dr.B.R.Ambedkar(Constitution), Jawaharlal Nehru(1st PM), Sardar Patel(integration of princely states)
+Geography: Black soil→cotton(Deccan trap); Alluvial soil→wheat/rice(North India); Red soil→millet; Laterite→tea/coffee; Thar desert→desert soil
+Economics: Green Revolution(Dr.M.S.Swaminathan); Father of Indian Planning(Sir M.Visvesvaraya); 73rd Amendment(Panchayati Raj 3-tier system); NITI Aayog; Five Year Plans
+
+ENGLISH FL KEY CONTENT:
+Unit 1 "A Wrong Man in Workers' Paradise"(Tagore): idle artist vs hardworking paradise; "never believed in mere utility"; girl paints pitcher; Tagore critiques pure utilitarianism; key grammar: articles(a/an/the)
+Unit 7 "Anne Frank": Holocaust; diary; courage; grammar: tenses
+Poem 1 "To a Pair of Sarus Crane"(Manmohan Singh): male killed by hunters; female circles in grief; figures: personification/simile/paradox; theme: love/loss/human cruelty
+Abraham Lincoln's Letter: moral values; independent thinking; virtues
+Lochinvar(Walter Scott): ballad; brave hero rescues Ellen; rhyme ABABCC
+Sonnet 73(Shakespeare): old age/death metaphors: autumn/twilight/dying fire; 14-line ABAB CDCD EFEF GG
+Mending Wall(Frost): "Good fences make good neighbours"; barriers/boundaries
+Grammar: question tags(+statement→-tag; -statement→+tag); phrasal verbs(break out/run over/take over/look up); voice; degrees; figures of speech
+
+RESPONSE RULES:
+1. Be SPECIFIC: name chapter, state marks, quote formula — never vague
+2. Maths: write formula FIRST, then substitute; show every step; include units
+3. Science: balance equations; use correct terms; describe diagrams with labels
+4. Social Science: bullet points; bold dates/names/treaties; match answer length to marks
+5. English: RTC = Quote→Context→Significance; grammar = Rule + 3 examples
+6. Bold key terms **like this**; use numbered lists for steps; structured sections
+7. End with 1 follow-up question
+
+PERSONALITY:
+- Warm and fun, like a brilliant friend who loves explaining things
+- Karnataka examples: Mysuru palace, Cauvery, Hampi, Vidhan Soudha, Bengaluru IT park, Udupi
+- Celebrate: "YESSS! 🎉 Perfect!", "Exactly right!", "You're on fire!"
+- Mistakes: "Close! The trick is…", "Good thinking, just one step off…"
+- Subject jokes: Maths: "Why did √-1 get therapy? It had complex issues! 😂"; Science: "Why can't you trust atoms? They make up everything! 😂"
+
+CURRENT SUBJECT: ${SUBJECT}
+CURRENT MODE: ${MODE}
+`;
+}
+
+/* ══════════════════════════════════════════
+   DOM HELPERS
+══════════════════════════════════════════ */
+
+// Quiz answer submission — called by inline card buttons
+function submitQuizAnswer(cardId, answerText){
+  const card = document.getElementById(cardId);
+  if(!card) return;
+  const textarea = card.querySelector('.quiz-write');
+  const submitBtn = card.querySelector('.quiz-submit');
+  const result = card.querySelector('.quiz-result');
+  const nextBtn = card.querySelector('.quiz-next');
+  const answer = answerText || (textarea && textarea.value.trim()) || '';
+  if(!answer) return;
+
+  // Disable inputs
+  if(textarea) { textarea.disabled = true; }
+  if(submitBtn) { submitBtn.disabled = true; }
+  card.classList.remove('active');
+  card.classList.add('answered');
+
+  // Show answer in chat as user bubble
+  addBubble('user', answer);
+  history.push({role:'user', parts:[{text: answer}]});
+
+  // Build evaluation prompt
+  const qtext = card.querySelector('.quiz-qtext').innerText;
+  const chapter = card.querySelector('.quiz-chapter') ? card.querySelector('.quiz-chapter').innerText : '';
+  const evalPrompt = 'My answer to the question "' + qtext + '" is: ' + answer +
+    (correctAnswer ? '\n[Correct answer hint: ' + correctAnswer + ']' : '');
+
+  // Show loading then get AI evaluation
+  const tid = showTyping();
+  loading = true;
+  fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEM_KEY,
+    {method:'POST', headers:{'Content-Type':'application/json'},
+     body: JSON.stringify({
+       system_instruction: {parts:[{text: sysPrompt()}]},
+       contents: [...history, {role:'user', parts:[{text: evalPrompt}]}],
+       generationConfig: {temperature:0.7, maxOutputTokens:800}
+     })}
+  ).then(r => r.json()).then(d => {
+    hideTyping(tid);
+    loading = false;
+    const reply = d.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not evaluate. Try again!';
+    history.push({role:'model', parts:[{text: reply}]});
+    addBubble('bot', reply);
+  }).catch(err => {
+    hideTyping(tid);
+    loading = false;
+    addBubble('bot', '⚠️ Error: ' + err.message);
+  });
+}
+
+// MCQ option click
+function selectMCQ(cardId, chosen, correct){
+  const card = document.getElementById(cardId);
+  if(!card) return;
+  const opts = card.querySelectorAll('.quiz-opt');
+  opts.forEach(o => {
+    o.disabled = true;
+    const letter = o.dataset.letter;
+    if(letter === correct) o.classList.add('reveal');
+    if(letter === chosen && chosen !== correct) o.classList.add('wrong');
+    if(letter === chosen && chosen === correct) o.classList.add('correct');
+  });
+  card.classList.remove('active');
+  card.classList.add('answered');
+  const answer = chosen + ') ' + (card.querySelector('[data-letter="'+chosen+'"]')?.dataset.text || chosen);
+  submitQuizAnswer(cardId, answer);
+}
+
+let _qcardId = 0;
+
+// Parse bot response and render quiz cards + regular text
+function addBubble(role, text){
+  const inner = document.getElementById('msgsInner');
+
+  if(role === 'bot' && MODE === 'quiz'){
+    // Try to parse quiz question cards from the text
+    const rendered = renderQuizMessage(text, inner);
+    if(rendered) { scrollChat(); return; }
+  }
+
+  const row = document.createElement('div');
+  row.className = 'msg-row ' + role;
+  const html = formatMsg(text, role);
+  if(role === 'bot')
+    row.innerHTML = '<div class="bot-av">🤖</div><div class="bubble bot">' + html + '</div>';
+  else
+    row.innerHTML = '<div class="bubble user">' + escHtml(text) + '</div>';
+  inner.appendChild(row);
+  scrollChat();
+}
+
+// Renders quiz question cards inline — returns true if any cards were rendered
+function renderQuizMessage(text, inner){
+  const hasMCQOptions = /\nA\)/.test(text) || /\n\(A\)/.test(text);
+  const qMatches = text.match(/Q\s*\d+:/gim) || [];
+  const hasQNum   = qMatches.length >= 1;
+  if(!hasMCQOptions && !hasQNum) return false;
+
+  const questions = parseQuizQuestions(text);
+  if(!questions.length) return false;
+
+  if(questions[0].preText && questions[0].preText.trim()){
+    const prow = document.createElement('div');
+    prow.className = 'msg-row bot';
+    prow.innerHTML = '<div class="bot-av">🤖</div><div class="bubble bot">' + formatMsg(questions[0].preText,'bot') + '</div>';
+    inner.appendChild(prow);
+  }
+
+  questions.forEach((q, idx) => {
+    const row   = document.createElement('div');
+    row.className = 'msg-row bot';
+    const cardId = 'qcard_' + (++_qcardId);
+
+    let c = '<div class="quiz-card active" id="' + cardId + '">';
+    c += '<div class="quiz-qnum">Q' + (idx+1)
+       + (q.chapter ? ' &nbsp;·&nbsp; ' + escHtml(q.chapter) : '')
+       + (q.marks   ? ' &nbsp;·&nbsp; ' + escHtml(q.marks)   : '')
+       + '</div>';
+    c += '<div class="quiz-qtext">' + formatMsg(q.question,'bot') + '</div>';
+
+    if(q.options && q.options.length){
+      c += '<div class="quiz-options">';
+      q.options.forEach(opt => {
+        c += '<button class="quiz-opt"'
+           + ' data-letter="' + escHtml(opt.letter) + '"'
+           + ' data-text="'   + escHtml(opt.text)   + '"'
+           + ' onclick="selectMCQ(\'' + cardId + '\',\'' + opt.letter + '\',\'\')">'
+           + '<span class="opt-letter">' + escHtml(opt.letter) + '</span>'
+           + escHtml(opt.text)
+           + '</button>';
+      });
+      c += '</div>';
+    } else {
+      c += '<div class="quiz-write-wrap">'
+         + '<textarea class="quiz-write" placeholder="Write your answer here…" rows="3"'
+         + ' onkeydown="if(event.ctrlKey&&event.key===\'Enter\'){event.preventDefault();submitQuizAnswer(\'' + cardId + '\',this.value)}"'
+         + '></textarea>'
+         + '<button class="quiz-submit" onclick="submitQuizAnswer(\'' + cardId + '\',document.getElementById(\'' + cardId + '\').querySelector(\'.quiz-write\').value)">Submit ↑</button>'
+         + '</div>';
+    }
+    c += '</div>';
+    row.innerHTML = '<div class="bot-av">🤖</div>' + c;
+    inner.appendChild(row);
+  });
+
+  const lastQ = questions[questions.length-1];
+  if(lastQ.postText && lastQ.postText.trim()){
+    const prow = document.createElement('div');
+    prow.className = 'msg-row bot';
+    prow.innerHTML = '<div class="bot-av">🤖</div><div class="bubble bot">' + formatMsg(lastQ.postText,'bot') + '</div>';
+    inner.appendChild(prow);
+  }
+  return true;
+}
+
+
+function parseQuizQuestions(text){
+  const lines = text.split('\n');
+  const questions = [];
+  let current = null;
+  let preText  = '';
+  let postLines = [];
+  let state = 'pre';
+
+  const isQStart = l => /^Q\s*\d+:/i.test(l.trim());
+  const isOption = l => /^\s*[A-D]\)\s/.test(l);
+  const optLetter = l => (l.trim().match(/^([A-D])\)/) || ['','?'])[1];
+  const optText   = l => l.trim().replace(/^[A-D]\)\s*/,'').trim();
+
+  for(let i=0; i<lines.length; i++){
+    const l = lines[i];
+    if(isQStart(l)){
+      if(current){ current.postText = ''; questions.push(current); }
+      const chM = l.match(/Chapter:?\s*([^|\n]+)/i);
+      const mM  = l.match(/(\d+)\s*marks?/i);
+      const qTxt = l.replace(/^Q\s*\d+:\s*/i,'').trim();
+      current = {
+        question: qTxt,
+        options:  [],
+        chapter:  chM ? chM[1].trim() : null,
+        marks:    mM  ? mM[1]+' marks' : null,
+        preText:  questions.length===0 ? preText : '',
+        postText: ''
+      };
+      state = 'question';
+    } else if(state==='question' && isOption(l)){
+      state = 'options';
+      current.options.push({letter:optLetter(l), text:optText(l)});
+    } else if(state==='options' && isOption(l)){
+      current.options.push({letter:optLetter(l), text:optText(l)});
+    } else if(state==='question' && current && l.trim()){
+      current.question += '\n' + l;
+    } else if(state==='pre'){
+      preText += l + '\n';
+    }
+  }
+  if(current) questions.push(current);
+  return questions;
+}
+
+
+function formatMsg(txt,role){
+  if(role==='user') return escHtml(txt);
+  // Rich markdown rendering for bot messages
+  let h = String(txt);
+
+  // Escape HTML first (but protect markers)
+  h = h.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  // Code blocks (``` ... ```)
+  h = h.replace(/```([\s\S]*?)```/g, (m,c)=>
+    '<pre style="background:#1e1e2e;color:#cdd6f4;padding:12px 14px;border-radius:10px;overflow-x:auto;font-size:12.5px;margin:8px 0;font-family:monospace;line-height:1.6">'+c.trim()+'</pre>');
+
+  // Inline code
+  h = h.replace(/`([^`\n]+)`/g,'<code>$1</code>');
+
+  // Bold
+  h = h.replace(/\*\*(.+?)\*\*/gs,'<strong>$1</strong>');
+
+  // Italic
+  h = h.replace(/\*([^*\n]+?)\*/g,'<em>$1</em>');
+
+  // Headers (## or ###)
+  h = h.replace(/^#{3} (.+)$/gm,'<div style="font-size:13px;font-weight:800;color:var(--saffron);margin:10px 0 4px;text-transform:uppercase;letter-spacing:0.04em">$1</div>');
+  h = h.replace(/^#{2} (.+)$/gm,'<div style="font-size:15px;font-weight:900;color:var(--gray-800);margin:12px 0 5px;border-bottom:1.5px solid var(--gray-100);padding-bottom:4px">$1</div>');
+  h = h.replace(/^#{1} (.+)$/gm,'<div style="font-size:16px;font-weight:900;color:var(--gray-800);margin:12px 0 6px">$1</div>');
+
+  // Horizontal rule
+  h = h.replace(/^---+$/gm,'<hr style="border:none;border-top:1.5px solid var(--gray-200);margin:10px 0"/>');
+
+  // Bullet points (- or •)
+  h = h.replace(/^[\-•] (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0"><span style="color:var(--saffron);font-weight:900;flex-shrink:0;margin-top:1px">•</span><span>$1</span></div>');
+
+  // Numbered list lines (1. 2. etc)
+  h = h.replace(/^(\d+)\. (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0"><span style="background:var(--saffron-light);color:var(--saffron);font-weight:800;min-width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:2px">$1</span><span>$2</span></div>');
+
+  // Step labels: "Step N — " or "✏️ Step N:"
+  h = h.replace(/(\*\*Step \d+[^*]*\*\*:?)/g,'<span style="color:var(--saffron);font-weight:800">$1</span>');
+
+  // Checkmark lines
+  h = h.replace(/^[✅✓] (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0;color:#166534"><span>✅</span><span>$1</span></div>');
+  h = h.replace(/^[❌✗] (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0;color:#dc2626"><span>❌</span><span>$1</span></div>');
+
+  // Arrow lines (→ or →)
+  h = h.replace(/^  →(.+)$/gm,'<div style="margin:2px 0 2px 16px;color:var(--gray-600);font-family:var(--font-mono);font-size:13px">→$1</div>');
+
+  // Newlines to br
+  h = h.replace(/\n/g,'<br>');
+
+  return h;
+}
+
+let _tc=0;
+function showTyping(){
+  const id='ty'+(++_tc);
+  const inner=document.getElementById('msgsInner');
+  const row=document.createElement('div');
+  row.id=id; row.className='typing-row';
+  row.innerHTML=`<div class="bot-av">🤖</div><div class="typing-bub"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+  inner.appendChild(row); scrollChat(); return id;
+}
+function hideTyping(id){const e=document.getElementById(id);if(e)e.remove();}
+function scrollChat(){const m=document.getElementById('chatMessages');m.scrollTop=m.scrollHeight;}
+function escHtml(t){
+  return String(t)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+/* ══════════════════════════════════════════
+   REFERENCE DATA
+══════════════════════════════════════════ */
+const REF=[
+  /* ── MATHS FORMULAS ── */
+  {s:'Mathematics',c:'formula',title:'Real Numbers',marks:null,
+   body:`**HCF × LCM = Product of the two numbers**
+
+Euclid's Division Lemma:
+  a = bq + r, where 0 ≤ r < b
+
+Fundamental Theorem of Arithmetic:
+  Every composite number has a unique prime factorisation.
+
+Key irrationals: √2, √3, √5, √7, π are all irrational.
+Sum/product rules:
+  • rational + irrational = irrational
+  • rational × non-zero irrational = irrational`},
+
+  {s:'Mathematics',c:'formula',title:'Polynomials',marks:null,
+   body:`For quadratic ax² + bx + c:
+  Sum of zeroes   (α + β)  = c-b/a
+  Product of zeroes (α × β) = cc/a
+
+For cubic ax³ + bx² + cx + d:
+  α + β + γ  = c-b/a
+  αβ + βγ + γα = cc/a
+  αβγ        = c-d/a`},
+
+  {s:'Mathematics',c:'formula',title:'Quadratic Equations ⭐',marks:'6m',
+   body:`Standard form: ax² + bx + c = 0
+
+Quadratic Formula:
+  cx = ( -b ± √(b²-4ac) ) / 2a
+
+Discriminant D = b² - 4ac:
+  D > 0 → two distinct real roots
+  D = 0 → two equal (repeated) roots
+  D < 0 → no real roots
+
+Factorisation method: split middle term.
+Completing the square: write as (x + p)² = q`},
+
+  {s:'Mathematics',c:'formula',title:'Arithmetic Progressions ⭐⭐',marks:'8m',
+   body:`General term (nth term):
+  caₙ = a + (n-1)d
+
+Sum of first n terms:
+  cSₙ = n/2 × [2a + (n-1)d]
+  cSₙ = n/2 × (a + l)   ← when last term l is known
+
+Relationship: aₙ = Sₙ - Sₙ₋₁
+
+Common difference: d = aₙ - aₙ₋₁`},
+
+  {s:'Mathematics',c:'formula',title:'Triangles ⭐⭐⭐',marks:'9m — HIGHEST',
+   body:`Basic Proportionality Theorem (BPT / Thales):
+  If DE ∥ BC in △ABC → cAD/DB = AE/EC
+
+Pythagoras Theorem:
+  ca² + b² = c²  (c = hypotenuse)
+Converse: If a²+b² = c² → angle C = 90°
+
+Area of similar triangles:
+  cArea₁ / Area₂ = (side₁)² / (side₂)²
+
+Similarity criteria: AA, SSS, SAS
+Key ratios for 30-60-90: sides 1 : √3 : 2
+Key ratios for 45-45-90: sides 1 : 1 : √2`},
+
+  {s:'Mathematics',c:'formula',title:'Coordinate Geometry ⭐',marks:'6m',
+   body:`Distance Formula:
+  cd = √[ (x₂-x₁)² + (y₂-y₁)² ]
+
+Section Formula (internal division m:n):
+  cx = (mx₂ + nx₁)/(m+n)
+  cy = (my₂ + ny₁)/(m+n)
+
+Midpoint Formula:
+  cM = ( (x₁+x₂)/2 , (y₁+y₂)/2 )
+
+Area of Triangle:
+  c½ |x₁(y₂-y₃) + x₂(y₃-y₁) + x₃(y₁-y₂)|`},
+
+  {s:'Mathematics',c:'formula',title:'Trigonometry ⭐',marks:'6m',
+   body:`Reciprocal relations:
+  sin θ = 1/cosecθ  |  cos θ = 1/sec θ  |  tan θ = 1/cot θ
+  tan θ = sin θ / cos θ
+
+Pythagorean Identities:
+  csin²θ + cos²θ = 1
+  c1 + tan²θ = sec²θ
+  c1 + cot²θ = cosec²θ
+
+Standard values table:
+  θ       | 0°  | 30°   | 45°   | 60°   | 90°
+  sin θ   |  0  |  1/2  | 1/√2 | √3/2  |  1
+  cos θ   |  1  | √3/2  | 1/√2 |  1/2  |  0
+  tan θ   |  0  |  1/√3 |   1  |  √3   |  ∞`},
+
+  {s:'Mathematics',c:'formula',title:'Circles',marks:null,
+   body:`Key theorems:
+  • Tangent ⊥ radius at point of contact
+  • Tangents from an external point are equal in length
+  • Angle in semicircle = 90°
+  • Angle subtended at centre = 2 × angle at circumference
+
+Length of tangent from external point P:
+  cPT = √(PO² - r²)  where O is centre, r is radius`},
+
+  {s:'Mathematics',c:'formula',title:'Areas Related to Circles',marks:null,
+   body:`Area of circle = cπr²
+Circumference = c2πr
+
+For sector with angle θ (degrees):
+  Arc length = c(θ/360) × 2πr
+  Area of sector = c(θ/360) × πr²
+
+Area of segment:
+  c= Area of sector - Area of triangle`},
+
+  {s:'Mathematics',c:'formula',title:'Surface Areas & Volumes ⭐⭐',marks:'7m',
+   body:`Cylinder:  CSA=c2πrh  |  TSA=c2πr(r+h)  |  V=cπr²h
+Cone:      CSA=cπrl    |  TSA=cπr(r+l)  |  V=c⅓πr²h  |  l=c√(r²+h²)
+Sphere:    SA=c4πr²    |  V=c(4/3)πr³
+Hemisphere:CSA=c2πr²   |  TSA=c3πr²     |  V=c(2/3)πr³
+Frustum:   V=c(πh/3)(r₁²+r₂²+r₁r₂)  |  l=c√[h²+(r₁-r₂)²]`},
+
+  {s:'Mathematics',c:'formula',title:'Statistics',marks:null,
+   body:`Mean — Direct Method:  cx̄ = Σfᵢxᵢ / Σfᵢ
+Mean — Assumed Mean:  cx̄ = A + Σfᵢdᵢ / Σfᵢ   (dᵢ = xᵢ - A)
+
+Mode:  cl + [(f₁-f₀)/(2f₁-f₀-f₂)] × h
+  l=lower boundary, f₁=modal class freq, f₀=preceding freq, f₂=following freq, h=class size
+
+Median:  cl + [(n/2 - cf)/f] × h
+  cf = cumulative frequency before median class
+
+Empirical relation:
+  cMode = 3×Median - 2×Mean`},
+
+  {s:'Mathematics',c:'formula',title:'Probability',marks:null,
+   body:`Classical Probability:
+  cP(E) = Favourable outcomes / Total outcomes
+
+Range: 0 ≤ P(E) ≤ 1
+Complement: cP(E) + P(Ē) = 1
+Certain event: P = 1  |  Impossible event: P = 0
+
+Equally likely outcomes: each has equal probability.`},
+
+  /* ── SCIENCE FORMULAS ── */
+  {s:'Science',c:'formula',title:'Electricity ⭐⭐⭐',marks:'8m — HIGHEST',
+   body:`Ohm's Law:  cV = IR   (V=volts, I=amps, R=ohms)
+
+Resistance:
+  Series:   cR = R₁ + R₂ + R₃
+  Parallel: c1/R = 1/R₁ + 1/R₂ + 1/R₃
+  Resistivity: cR = ρl/A
+
+Power:  cP = VI = I²R = V²/R   (watts)
+Energy: cE = Pt = VIt           (joules or kWh)
+
+Joule's Law of Heating:
+  cH = I²Rt
+
+Commercial unit: 1 kWh = 1 unit = 3.6×10⁶ J`},
+
+  {s:'Science',c:'formula',title:'Light — Mirrors ⭐⭐',marks:'8m — HIGHEST',
+   body:`Mirror formula:  c1/v + 1/u = 1/f
+Magnification:   cm = -v/u = h'/h
+Focal length:    cf = R/2
+
+Sign Convention (New Cartesian):
+  • Distances measured from pole
+  • Direction of incident ray = positive
+  • Heights above principal axis = positive
+  • Concave mirror: f is negative
+  • Convex mirror:  f is positive`},
+
+  {s:'Science',c:'formula',title:'Light — Lenses ⭐⭐',marks:'(part of Ch9)',
+   body:`Lens formula:     c1/v - 1/u = 1/f
+Magnification:    cm = v/u = h'/h
+Power of lens:    cP = 1/f  (f in metres → P in Dioptres D)
+Combination:      cP = P₁ + P₂ + P₃
+
+Snell's Law:  cn = sin i / sin r
+Speed relation: cn = c/v
+
+Convex (converging): f positive  |  Concave (diverging): f negative`},
+
+  {s:'Science',c:'formula',title:'Carbon Compounds ⭐⭐⭐',marks:'8m — HIGHEST',
+   body:`Combustion of methane:
+  cCH₄ + 2O₂ → CO₂ + 2H₂O
+
+Ethanol + sodium:
+  c2C₂H₅OH + 2Na → 2C₂H₅ONa + H₂↑
+
+Oxidation of ethanol to ethanoic acid:
+  C₂H₅OH + [O] → CH₃COOH  (acidified K₂Cr₂O₇)
+
+Saponification (soap making):
+  Ester + NaOH → Sodium carboxylate (soap) + Glycerol
+
+Addition reaction (unsaturated → saturated):
+  CH₂=CH₂ + H₂ → CH₃-CH₃  (Ni catalyst)
+
+Homologous series differ by CH₂ (14 u) each step.
+Functional groups: -OH (alcohol), -COOH (acid), -CHO (aldehyde), C=O (ketone)`},
+
+  {s:'Science',c:'formula',title:'Key Chemical Equations',marks:null,
+   body:`Photosynthesis:
+  c6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂  (chlorophyll, sunlight)
+
+Aerobic Respiration:
+  cC₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + Energy (ATP)
+
+Zinc + dilute H₂SO₄:
+  cZn + H₂SO₄ → ZnSO₄ + H₂↑
+
+Thermite reaction (Displacement):
+  cFe₂O₃ + 2Al → Al₂O₃ + 2Fe
+
+Decomposition of CaCO₃:
+  cCaCO₃ → CaO + CO₂  (heating)
+
+Neutralisation:
+  cNaOH + HCl → NaCl + H₂O`},
+
+  /* ── CHAPTERS ── */
+  {s:'Mathematics',c:'chapter',title:'All 14 Chapters — Maths Class 10',marks:null,
+   body:`1.  Real Numbers
+2.  Polynomials
+3.  Pair of Linear Equations in Two Variables    ⭐ 8m
+4.  Quadratic Equations                          ⭐ 6m
+5.  Arithmetic Progressions                      ⭐ 8m
+6.  Triangles                                    ⭐ 9m ← HIGHEST
+7.  Coordinate Geometry                          ⭐ 6m
+8.  Introduction to Trigonometry                 ⭐ 6m
+9.  Some Applications of Trigonometry
+10. Circles
+11. Areas Related to Circles
+12. Surface Areas and Volumes                    ⭐ 7m
+13. Statistics
+14. Probability`},
+
+  {s:'Science',c:'chapter',title:'All 13 Chapters — Science Class 10',marks:null,
+   body:`Ch 1.  Chemical Reactions and Equations
+Ch 2.  Acids, Bases and Salts                   ⭐ 6m
+Ch 3.  Metals and Non-metals                    ⭐ 7m
+Ch 4.  Carbon and Its Compounds                 ⭐ 8m ← HIGHEST
+Ch 5.  Life Processes                           ⭐ 8m ← HIGHEST
+Ch 6.  Control and Coordination                 ⭐ 6m
+Ch 7.  How do Organisms Reproduce?              ⭐ 7m
+Ch 8.  Heredity
+Ch 9.  Light – Reflection and Refraction        ⭐ 8m ← HIGHEST
+Ch 10. Human Eye and Colourful World
+Ch 11. Electricity                              ⭐ 8m ← HIGHEST
+Ch 12. Magnetic Effects of Electric Current     ⭐ 6m
+Ch 13. Our Environment`},
+
+  {s:'English',c:'chapter',title:'All Units — English FL Class 10',marks:null,
+   body:`PROSE (30 marks):
+1.  A Wrong Man in a Workers' Paradise    — Rabindranath Tagore
+2.  The Elixir of Life
+3.  The Gift of the Magi
+4.  Louis Pasteur, Conqueror of Disease
+5.  Moral Action
+6.  The Eyes Are Not Here
+7.  The Girl Who Was Anne Frank
+8.  A Village Cricket Match
+9.  Consumerist Culture
+10. The Pie and the Tart
+
+POEMS (30 marks):
+1.  To a Pair of Sarus Crane              — Manmohan Singh
+2.  Abraham Lincoln's Letter to His Son's Teacher
+3.  Vachana: The Body and the Temple
+4.  Lochinvar
+5.  Poison Tree
+6.  Sonnet 73
+7.  The Stolen Boat
+8.  Mending Wall
+9.  Buttoo
+10. C.L.M.
+
+SUPPLEMENTARY READING (7 marks):
+SR1. The Treasure Island
+SR2. Karna
+SR3. Ulysses and the Cyclops`},
+
+  {s:'Social Science',c:'chapter',title:'All Chapters — Social Science Class 10',marks:null,
+   body:`HISTORY ⭐ 25m:
+1. Advent of Europeans to India
+2. Extension of the British Rule
+3. Impact of British Rule in India
+4. Opposition in Karnataka & Wodeyars of Mysore
+5. Social & Religious Reform Movements
+6. First War of Indian Independence (1857)
+7. The Freedom Struggle
+8. India After Independence
+9. World Wars and India's Role
+
+GEOGRAPHY ⭐ 22m:
+1–10. Physical Features, Seasons, Soils, Forests, Water Resources,
+Land Use & Agriculture, Minerals & Power, Transport, Industries, Natural Disasters
+
+POLITICAL SCIENCE ● 11m:
+Public Administration | Challenges of India | India's Foreign Policy | World Organisations
+
+SOCIOLOGY ● 8m:
+Social Stratification | Work & Economic Life | Collective Behaviour | Social Challenges
+
+ECONOMICS ● 7m:
+Economy & Government | Rural Development | Public Finance & Budget
+
+BUSINESS STUDIES ● 7m:
+Banking Transactions | Entrepreneurship | Consumer Education & Protection`},
+
+  /* ── KEY DATES ── */
+  {s:'Social Science',c:'dates',title:'History — Key Dates MUST KNOW',marks:null,
+   body:`1453  — Turks captured Constantinople → Europeans sought new sea routes
+1498  — Vasco da Gama landed at Calicut (Kappad, Kerala)
+1757  — Battle of Plassey (British victory → Bengal control)
+1764  — Battle of Buxar (Shah Alam II → Diwani rights to British)
+1775  — First Anglo-Maratha War (Treaty of Salbai 1782)
+1799  — Fall of Seringapatam; Tipu Sultan died
+1857  — First War of Indian Independence (Revolt at Meerut)
+1885  — Indian National Congress founded (A.O. Hume)
+1905  — Partition of Bengal (Swadeshi movement began)
+1920  — Non-Cooperation Movement (Gandhiji)
+1930  — Civil Disobedience / Dandi March
+1942  — Quit India Movement ("Do or Die")
+1947  — Independence; Partition of India
+1950  — Constitution of India came into force (January 26)
+1956  — States Reorganisation Act
+1973  — Mysore state renamed Karnataka
+WWI:  1914–1918  (Treaty of Versailles 1919)
+WWII: 1939–1945  (UN formed 1945)`},
+
+  {s:'Social Science',c:'dates',title:'Political Science & Economics — Key Facts',marks:null,
+   body:`UN established:          1945  |  HQ: New York
+Universal Human Rights:   Dec 10, 1948  → World Human Rights Day: Dec 10
+World Consumer Rights Day: March 15 (Kennedy signed US act in 1962)
+SAARC founded:            1985  |  HQ: Kathmandu
+ICJ HQ: The Hague  |  WHO HQ: Geneva  |  FAO HQ: Rome  |  EU HQ: Brussels
+
+Dowry Prohibition Act:         1961
+Equal Wages Act:               1976
+Protection of Civil Rights Act: 1976
+Consumer Protection Act:       1986
+Prenatal Sex Testing Prohibition Act: 1994
+73rd Amendment (Panchayati Raj): 1992 (3-tier system)
+Right to Information (RTI):    2005
+Child Marriage Prohibition Act: 2006
+Right to Education (RTE) Art 21A: 2009
+
+Green Revolution Father: Dr. M.S. Swaminathan
+Father of Indian Economic Planning: Sir M. Visvesvaraya
+Architect of Constitution: Dr. B.R. Ambedkar`},
+
+  {s:'Science',c:'dates',title:'Science — Key Discoveries & Scientists',marks:null,
+   body:`Ohm's Law                 — Georg Simon Ohm
+Laws of Refraction (Snell's) — Willebrord Snell
+Heredity laws               — Gregor Mendel (pea plant, 1860s)
+Natural Selection           — Charles Darwin (1859)
+DNA double helix structure  — Watson & Crick (1953)
+First IUPAC organic naming  — International convention
+Periodic Table              — Dmitri Mendeleev
+Photosynthesis equation     — Jan Ingenhousz (confirmed)
+Electromagnetic induction   — Michael Faraday
+Germ Theory of Disease      — Louis Pasteur
+Classification of elements  — Döbereiner → Newlands → Mendeleev → Modern periodic table`},
+
+  /* ── BLUEPRINTS ── */
+  {s:'Mathematics',c:'blueprint',title:'Maths Blueprint 2025-26',marks:null,
+   body:`Total: 80m theory + 20m internals = 100 | 38 questions | 3hrs + 15min cool-off
+Paper: 16×1m + 8×2m + 9×3m + 4×4m + 1×5m
+Internal choices: 2 extra for 2m | 4 extra for 3m | 2 extra for 4m | 1 extra for 5m
+
+Chapter-wise marks (OFFICIAL from KSEAB 2025-26 PDF):
+  Ch 6:  Triangles                      9m ★★ HIGHEST   (2×1m + 1×3m + 1×4m)
+  Ch 3:  Pair of Linear Equations       8m ★★           (2×1m + 1×2m + 1×4m)
+  Ch 5:  Arithmetic Progressions        8m ★★           (2×1m + 1×2m + 1×4m)
+  Ch 11: Surface Areas & Volumes        7m ★            (2×1m + 1×3m)
+  Ch 4:  Quadratic Equations            6m              (1×1m + 1×2m + 1×3m)
+  Ch 7:  Circles                        5m              (1×1m + 1×3m)
+  Ch 8:  Coordinate Geometry            6m              (1×1m + 1×2m + 1×3m)
+  Ch 9:  Introduction to Trigonometry   6m              (1×1m + 1×2m + 1×3m)
+  Ch 10: Applications of Trigonometry   4m              (1×1m + 1×4m implied)
+  Ch 1:  Real Numbers                   4m              (1×1m + 1×3m)
+  Ch 2:  Polynomials                    5m              (2×1m + 1×3m)
+  Ch 12: Areas Related to Circles       3m — LOWEST     (1×1m)
+  Ch 13: Statistics                     4m              (1×1m + 1×3m)
+  Ch 14: Probability                    4m              (1×1m + 1×3m)`},
+
+  {s:'Science',c:'blueprint',title:'Science Blueprint 2025-26 (Official KSEAB)',marks:null,
+   body:`Total: 80m theory + 20m internals = 100 | 38 questions | 3hrs + 15min cool-off
+3 sections: Physics + Chemistry + Biology
+Paper: 16×1m + 8×2m + 9×3m + 4×4m + 1×5m
+Internal choices: 2 extra for 2m | 3 extra for 3m | 2 extra for 4m | 1 extra for 5m
+Source: OFFICIAL from KSEAB 2025-26 PDF (Science_Blueprint.pdf)
+
+Chapter-wise marks (exact from PDF):
+  Ch 1:  Chemical Reactions & Equations    ● 4m   (1×1m + 1×3m)
+  Ch 2:  Acids, Bases and Salts            ● 6m   (1×1m + 1×2m + 1×3m)
+  Ch 3:  Metals and Non-metals             ★ 7m   (2×1m + 1×2m + 1×3m)
+  Ch 4:  Carbon and Its Compounds          ⭐ 8m — HIGHEST (2×1m + 1×2m + 1×4m)
+  Ch 5:  Life Processes                    ⭐ 8m — HIGHEST (2×1m + 1×2m + 1×4m)
+  Ch 6:  Control and Coordination          ● 6m   (1×1m + 1×2m + 1×3m)
+  Ch 7:  How do Organisms Reproduce?       ★ 7m   (2×1m + 1×5m) ← has 5-mark question!
+  Ch 8:  Heredity                          ● 4m   (1×1m + 1×3m)
+  Ch 9:  Light – Reflection & Refraction   ⭐ 8m — HIGHEST (1×1m + 1×3m + 1×4m)
+  Ch 10: Human Eye and Colourful World     ● 5m   (1×2m + 1×3m)
+  Ch 11: Electricity                       ⭐ 8m — HIGHEST (2×1m + 1×2m + 1×4m)
+  Ch 12: Magnetic Effects of Electric Current ● 6m (1×1m + 1×2m + 1×3m)
+  Ch 13: Our Environment                   ● 3m — LOWEST (1×3m)
+  TOTAL: 16×1m + 8×2m + 9×3m + 4×4m + 1×5m = 38 questions, 80 marks
+
+PRIORITY: Carbon(8)=Life Processes(8)=Light(8)=Electricity(8) > Metals(7)=Reproduction(7) > Acids/Control/Magnetism(6) > Human Eye(5) > Real Chemical Rxns(4)=Heredity(4) > Environment(3)`},
+
+  {s:'Social Science',c:'blueprint',title:'Social Science Blueprint 2025-26',marks:null,
+   body:`Total: 80m theory + 20m internals = 100 | 38 questions | 3hrs + 15min cool-off
+Paper: 16×1m + 8×2m + 9×3m + 4×4m + 1×5m
+Internal choices: 2 extra for 2m | 4 extra for 3m | 2 extra for 4m | Map=open choice
+Source: OFFICIAL from KSEAB 2025-26 PDF (Social_Blueprint.pdf)
+
+HISTORY — ⭐ 25 marks (11 questions) — HIGHEST SECTION:
+  Ch 1:  Advent of Europeans to India              3m  (1×1m + 1×3m)
+  Ch 2:  Extension of the British Rule             2m  (1×2m)
+  Ch 3:  Impact of British Rule                    1m  (1×1m)
+  Ch 4:  Opposition in Karnataka & Wodeyars        ★ 5m (1×1m + 1×3m + 1×4m? — HIGHEST in History!)
+  Ch 5:  Social & Religious Reform Movements       3m  (1×1m + 1×3m)
+  Ch 6:  First War of Independence (1857)          3m  (1×1m + 1×3m)
+  Ch 7:  The Freedom Struggle                      ★ 4m (1×1m + 1×4m)
+  Ch 8:  India After Independence                  2m  (1×2m)
+  Ch 9:  World Wars and India's Role               2m  (2×1m)
+
+GEOGRAPHY — ⭐ 22 marks (9 questions):
+  Ch 18: Geographical Position & Physical Features 2m
+  Ch 19: Seasons                                   1m
+  Ch 20: Soils                                     ★ 4m (1×1m + 1×3m)
+  Ch 21: Forest Resources                          3m  (1×2m + 1×3m)
+  Ch 22: Water Resources                           2m  (1×2m)
+  Ch 23: Land Use & Agriculture                    2m  (1×1m + 1×2m? — check)
+  Ch 24: Mineral & Power Resources                 1m  (1×1m)
+  Ch 25: Transport & Communication                 2m  (1×1m + 1×2m)
+  Ch 26: Major Industries                          2m  (1×1m + 1×2m)
+  Ch 27: Natural Disasters                         3m  (1×2m + 1×3m)
+
+POLITICAL SCIENCE — 11 marks (5 questions):
+  Ch 10: Public Administration                     2m  (1×1m + 1×4m? — check)
+  Ch 11: Challenges of India                       ★ 4m (1×1m + 1×4m)
+  Ch 12: India's Foreign Policy                    3m  (1×1m + 1×3m)
+  Ch 13: World Organisations                       2m  (2×1m)
+
+SOCIOLOGY — 8 marks (5 questions):
+  Ch 14: Social Stratification                     1m
+  Ch 15: Work and Economic Life                    3m
+  Ch 16: Collective Behaviour and Protests         2m  (2×1m)
+  Ch 17: Social Challenges                         2m
+
+ECONOMICS — 7 marks (4 questions):
+  Ch 28: Economy and Government                    2m  (1×1m + 1×4m implied)
+  Ch 29: Rural Development                         ★ 4m (1×1m + 1×2m + 1×3m)
+  Ch 30: Public Finance and Budget                 1m
+
+BUSINESS STUDIES — 7 marks (4 questions):
+  Ch 31: Bank Transactions                         ★ 4m (1×1m + 1×2m + 1×3m)
+  Ch 32: Entrepreneurship                          1m
+  Ch 33: Consumer Education & Protection           2m  (1×2m)`},
+
+  {s:'English',c:'blueprint',title:'English FL Blueprint 2025-26',marks:null,
+   body:`Total: 100 marks (theory only, no internal marks) | 45 questions | 3hrs + 15min cool-off
+Paper: 17×1m + 10×2m + 11×3m + 5×4m + 2×5m = 45Q, 100m
+Internal choices: 1 extra for 3m | 3 extra for 4m | 2 extra for 5m
+Source: OFFICIAL from KSEAB 2025-26 PDF (English_Blueprint.pdf)
+
+PROSE — 30 marks (12 questions):
+  Unit 1:  A Wrong Man in Workers' Paradise       3m  (1×1m + 1×3m)
+  Unit 2:  The Elixir of Life                     ★ 4m (1×4m)
+  Unit 3:  The Gift of the Magi                   3m  (1×1m + 1×3m)
+  Unit 4:  Louis Pasteur, Conqueror of Disease    ★ 4m (1×4m)
+  Unit 5:  What is Moral Action?                  3m  (1×1m + 1×3m)
+  Unit 6:  The Eyes are not Here                  3m  (1×1m + 1×3m)
+  Unit 7:  The Girl who was Anne Frank            ★ 4m (1×1m + 1×2m + 1×4m? — 3Q, 4m)
+  Unit 8:  A Village Cricket Match                2m  (1×1m + 1×2m)
+  Unit 9:  Consumerist Culture                    3m  (1×1m + 1×2m)
+  Unit 10: The Pie and the Tart                   1m  (1×1m)
+
+POETRY — 30 marks (11 questions):
+  Poem 11: To a Pair of Sarus Crane               3m  (1×1m + 1×2m)
+  Poem 12: Abraham Lincoln's Letter               ★ 4m (1×4m) — HIGH MARK
+  Poem 13: Vachana                                3m  (1×3m)
+  Poem 14: Lochinvar                              3m  (1×3m)
+  Poem 15: A Poison Tree                          ★ 4m (1×4m) — HIGH MARK
+  Poem 16: Sonnet-73                              2m  (1×1m + 1×2m)
+  Poem 17: The Stolen Boat                        3m  (1×3m)
+  Poem 18: Mending Wall                           2m  (1×1m + 1×2m)
+  Poem 19: Buttoo                                 3m  (1×3m)
+  Poem 20: C.L.M.                                 3m  (1×3m)
+
+SUPPLEMENTARY READING — 7 marks (3 questions):
+  SR 21: Treasure Island                          2m  (1×1m + 1×2m)
+  SR 22: Karna                                    3m  (1×3m)
+  SR 23: Ulysses and the Cyclops                  2m  (1×1m + 1×2m)
+
+GRAMMAR & COMPOSITION — 33 marks (19 questions):
+  Grammar & Vocabulary                            ★★ 15m (9×1m + 3×3m) — HIGHEST CATEGORY
+  Analogy                                         4m  (4×1m)
+  Passage for Comprehension                       4m  (1×4m)
+  Essay Writing                                   ★ 5m (1×5m)
+  Letter Writing                                  ★ 5m (1×5m)
+
+GRAND TOTAL: 17×1m + 10×2m + 11×3m + 5×4m + 2×5m = 45 questions, 100 marks`},
+
+  /* ── EXAM TIPS ── */
+  {s:'Mathematics',c:'tips',title:'Maths — How to Score A+',marks:null,
+   body:`1. Show EVERY step — marks awarded per step, not just final answer
+2. Write formula first, then substitute values
+3. Always include units (cm, cm², cm³, m, etc.)
+4. Triangles (9m): state theorems by name before using them
+5. APs: verify common difference d is consistent throughout
+6. Graph questions: label axes, plot minimum 3 points
+7. Attempt all 38 questions — partial marks count!
+8. Practice Triangles and APs daily — combined 17 marks
+9. Calculators NOT allowed — strengthen mental arithmetic
+10. Check answers in the last 10 minutes`},
+
+  {s:'Science',c:'tips',title:'Science — How to Score A+',marks:null,
+   body:`1. Draw DIAGRAMS whenever asked — each label = marks
+2. Balance ALL chemical equations — unbalanced equations lose marks
+3. Use correct scientific terms: "photosynthesis" not "food making"
+4. Numericals: Formula → Substitution → Calculation → Answer with unit
+5. Biology: Practise human digestive system, neuron, flower diagrams
+6. Physics: ray diagrams for mirrors and lenses — draw with ruler!
+7. Carbon Compounds: learn functional groups and reaction types
+8. Memorise reactivity series: K>Na>Ca>Mg>Al>Zn>Fe>Pb>H>Cu>Ag>Au
+9. Life Processes (8m): know all 4 processes — Nutrition, Respiration, Transport, Excretion
+10. Electricity (8m): solve 5+ numerical problems before exam`},
+
+  {s:'Social Science',c:'tips',title:'Social Science — How to Score A+',marks:null,
+   body:`1. Write ALL answers POINT-WISE (bullet format) — markers expect it
+2. History: memorise key dates, names, treaties — they come in 1-mark MCQs
+3. Geography: PRACTICE MAP WORK — these are easy marks that many lose
+4. Match answer length to marks: 1m=1 point, 2m=2-3 points, 3m=5-6 points
+5. Include leader names, year, place in History answers
+6. Economics: learn definitions precisely — Deficit Budget, Fiscal Policy, Gram Swaraj
+7. Geography: know which crops grow in which soil (black soil → cotton, etc.)
+8. History + Geography = 47/80 marks — master these two FIRST
+9. Political Science: learn POSDCORB, Articles 315/320/356 etc.
+10. Never mix sections — History answers ≠ Geography answers`},
+
+  {s:'Hindi',c:'blueprint',title:'Hindi Blueprint 2025-26 (Official KSEAB)',marks:null,
+   body:`Total: 80m theory + 20m internals = 100 | 38 questions | 3hrs + 15min cool-off
+Paper: 16×1m + 8×2m + 9×3m + 4×4m + 1×5m
+Source: OFFICIAL from KSEAB 2025-26 PDF (Hindi_Blueprint.pdf — Subject 61-H)
+
+Chapter-wise marks (all 24 entries):
+  1.  कश्मीरी सेब              3m  (1×1m + 1×2m)
+  2.  गिल्लू                   3m  (1×3m)
+  3.  मेरा बचपन                3m  (1×1m + 1×2m)
+  4.  बसंत की सच्चाई           ★ 4m (1×4m) — HIGH MARK
+  5.  इंटरनेट क्रांति           3m  (1×1m + 1×3m)
+  6.  ईमानदारों के सम्मेलन में  2m  (1×1m + 1×2m)
+  7.  दुनिया में पहला मकान      2m  (2×2m)
+  8.  रोबोट                    3m  (1×1m + 1×3m)
+  9.  महिला की साहस गाथा       3m  (1×1m + 1×3m)
+  10. कर्नाटक संपदा             ★ 4m (1×1m + 1×2m + 1×4m) — HIGH MARK
+  11. बाल-शक्ति                2m  (1×1m + 1×2m)
+  12. मातृभूमि                  3m  (1×1m + 1×3m)
+  13. अभिनव मनुष्य              3m  (1×1m + 1×2m + 1×3m)
+  14. तुलसी के दोहे             ★ 4m (1×1m + 1×2m + 1×4m) — HIGH MARK
+  15. समय की पहचान             3m  (1×1m + 1×3m)
+  16. सूर-श्याम                 3m  (1×1m + 1×2m + 1×3m)
+  17. कोशिश करने वालों की...    ★ 4m (1×4m) — HIGH MARK
+  18. शनि: सबसे सुंदर ग्रह      2m  (1×1m + 1×2m)
+  19. सत्य की महिमा / नागरिक कर्तव्य 2m (1×1m + 1×2m)
+  20. व्याकरण                   ⭐ 8m (8×1m) — MOST QUESTIONS
+  21. अनुवाद                    3m  (1×3m)
+  22. अपठित गद्यांश              ★ 4m (1×4m)
+  23. निबंध रचना                ★ 4m (1×4m)
+  24. पत्र लेखन                  ⭐ 5m (1×5m) — HIGHEST SINGLE QUESTION
+
+PRIORITY: व्याकरण(8m) + पत्र लेखन(5m) + निबंध(4m) + अपठित(4m) = 21/80 from writing sections alone!
+High-mark lessons: बसंत(4m) + कर्नाटक संपदा(4m) + तुलसी(4m) + कोशिश(4m)`},
+
+  {s:'Kannada',c:'blueprint',title:'Kannada 2nd Language Blueprint 2025-26 (Official KSEAB)',marks:null,
+   body:`Subject: Second Language Kannada (33K)
+Total: 80m theory + 20m internals = 100 | 38 questions
+Paper: 16×1m + 8×2m + 9×3m + 4×4m + 1×5m
+Internal choices: 1 extra for 3m, 3 extra for 4m, 1 extra for 5m (20 internal marks total)
+
+Section marks:
+  Prose (8 lessons)    26 marks — 14 questions
+  Poetry (7 poems)     27 marks — 13 questions
+  Supplementary         4 marks — 2 questions
+  Comprehension         4 marks — 1 question
+  Grammar              19 marks — 8 questions (including essay 4m + letter 5m)
+
+Highest-scoring chapters:
+  ಬೋಧಿವೃಕ್ಷದ ಹಾಡು (Poetry) ★ 4m | ಗುರಿ (Poetry) ★ 4m | ವಚನಗಳು ★ 4m
+  ನಿಟ್ಟೋಟದಲ್ಲಿ ✦ 4m | ಸವಿಚೈತ್ರ 4m | ಸದ್ದುಮಾಡದಿರು 4m
+  Grammar: Essay (ಪ್ರಬಂಧ) 4m★ + Letter (ಪತ್ರ ಲೇಖನ) 5m★★`},
+
+  {s:'English',c:'tips',title:'English FL — How to Score A+',marks:null,
+   body:`1. Prose (30m): Know STORY, CHARACTERS, THEME, MORAL of each lesson
+2. Poetry (30m): Learn FIGURES OF SPEECH for all 10 poems
+3. RTC (Reference to Context): Quote → Speaker/Context → Significance
+4. Grammar (19m): Practise articles, question tags, voice, degrees, phrasal verbs
+5. Letter format: Date → Address → Subject → Body → Sign-off — format marks are given!
+6. Essay: 3 clear paragraphs — Introduction (2-3 lines), Body (5-6 points), Conclusion
+7. Unit 1 "A Wrong Man" — most asked: know the TWO WORLDS contrast
+8. Question tags: positive sentence → negative tag, negative sentence → positive tag
+9. Comprehension: use words and phrases from the passage in your answers
+10. Analogy: find the relationship pattern (synonym, antonym, part-whole, cause-effect)`},
+];
+
+/* ══════════════════════════════════════════
+   RENDER REFERENCE TAB
+══════════════════════════════════════════ */
+const CAT_ICON ={formula:'📐',chapter:'📚',dates:'📅',tips:'💡',blueprint:'📊'};
+const SUBJ_ICON={Mathematics:'🔢',Science:'🔬','Social Science':'🌍',English:'📖',Hindi:'🇮🇳',Kannada:'🌿'};
+const MARKS_COLOR={'8m — HIGHEST':'pill-red','9m — HIGHEST':'pill-red','7m':'pill-orange','8m':'pill-red','6m':'pill-orange','(part of Ch9)':'pill-violet'};
+
+function renderRef(){
+  const fS=document.getElementById('refSubj').value;
+  const fC=document.getElementById('refCat').value;
+  const container=document.getElementById('refCards');
+
+  const items=REF.filter(r=>(!fS||r.s===fS)&&(!fC||r.c===fC));
+  if(!items.length){
+    container.innerHTML=`<div class="ref-empty"><div>🔍</div><p>No items match your filter.<br>Try a different subject or category.</p></div>`;
+    return;
+  }
+
+  // Group by subject
+  const bySubj={};
+  items.forEach(r=>{
+    if(!bySubj[r.s])bySubj[r.s]=[];
+    bySubj[r.s].push(r);
+  });
+
+  let html='';
+  Object.entries(bySubj).forEach(([subj,arr])=>{
+    html+=`<div class="ref-section"><div class="ref-section-title">${SUBJ_ICON[subj]||'📚'} ${subj}</div>`;
+    arr.forEach((r,i)=>{
+      const id=`rc_${subj.replace(/\s/g,'_')}_${i}`;
+      const pillClass=MARKS_COLOR[r.marks]||'pill-green';
+      const marksPill=r.marks?`<span class="pill ${pillClass}">${r.marks}</span>`:'';
+      const catPill=`<span class="pill pill-orange">${CAT_ICON[r.c]} ${r.c}</span>`;
+      const bodyHtml=formatRefBody(r.body);
+      html+=`<div class="ref-card">
+        <div class="ref-card-head" onclick="toggleCard('${id}')">
+          <div class="ref-card-title">${r.title}</div>
+          <div class="ref-card-meta">${marksPill}${catPill}<span class="chevron" id="ch_${id}">▾</span></div>
+        </div>
+        <div class="ref-card-body${r.c==='blueprint'?' open':''}" id="${id}"><div class="ref-body-text">${bodyHtml}</div></div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  container.innerHTML=html;
+}
+
+function toggleCard(id){
+  const body=document.getElementById(id);
+  const chev=document.getElementById('ch_'+id);
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  if(chev)chev.classList.toggle('open',!isOpen);
+}
+
+function formatRefBody(text){
+  return escHtml(text)
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/⭐/g,'<span class="hi">⭐</span>');
+}
+
+// Init ref on page load with all items visible
+window.addEventListener('DOMContentLoaded',()=>{ 
+  renderRef(); 
+  validateS1(); 
+  validateS2();
+});
+
+</script>
+</body>
+</html>

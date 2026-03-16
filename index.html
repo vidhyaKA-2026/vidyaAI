@@ -30,8 +30,8 @@
   --surface:rgba(255,255,255,.85);
   --surface-2:rgba(255,255,255,.6);
 
-  --font:'Baloo 2',sans-serif;
-  --mono:'JetBrains Mono',monospace;
+  --font:'Baloo 2','Nunito','Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Courier New',monospace;
   --r-sm:8px; --r-md:14px; --r-lg:20px; --r-xl:28px; --r-full:9999px;
   --shadow-sm:0 2px 8px rgba(0,0,0,.08);
   --shadow-md:0 6px 24px rgba(0,0,0,.12);
@@ -47,7 +47,7 @@ body{font-family:var(--font);background:var(--bg-to);color:var(--ink);-webkit-fo
 ═══════════════════════════════════ */
 .bg{
   position:fixed;inset:0;z-index:0;overflow:hidden;
-  background:linear-gradient(135deg,#fef3c7 0%,#fde8d8 35%,#fce7f3 65%,#dbeafe 100%);
+  background:linear-gradient(135deg,#fef3c7 0%,#fde8d8 40%,#dbeafe 100%);
 }
 
 /* Floating subject symbols */
@@ -84,7 +84,8 @@ body{font-family:var(--font);background:var(--bg-to);color:var(--ink);-webkit-fo
 ═══════════════════════════════════ */
 #wizard{
   position:relative;z-index:10;
-  height:100%;display:flex;align-items:center;justify-content:center;padding:20px;
+  height:100%;display:flex;align-items:center;justify-content:center;
+  padding:20px;overflow-y:auto;
 }
 .w-step{display:none;width:100%;max-width:460px;flex-direction:column;}
 .w-step.active{display:flex;animation:pop-in .35s cubic-bezier(.34,1.56,.64,1);}
@@ -95,12 +96,11 @@ body{font-family:var(--font);background:var(--bg-to);color:var(--ink);-webkit-fo
 
 /* Card */
 .card{
-  background:rgba(255,255,255,.88);
-  backdrop-filter:blur(20px) saturate(180%);
-  border:2px solid rgba(255,255,255,.9);
+  background:#ffffff;
+  border:2px solid rgba(249,115,22,.2);
   border-radius:var(--r-xl);
   padding:36px 32px;
-  box-shadow:0 8px 32px rgba(249,115,22,.15),0 2px 8px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.9);
+  box-shadow:0 8px 32px rgba(249,115,22,.15),0 2px 8px rgba(0,0,0,.12);
 }
 @media(max-width:480px){.card{padding:26px 18px}}
 
@@ -125,13 +125,13 @@ body{font-family:var(--font);background:var(--bg-to);color:var(--ink);-webkit-fo
 /* Card head */
 .chead{text-align:center;margin-bottom:24px}
 .cicon{
-  width:76px;height:76px;border-radius:22px;margin:0 auto 14px;
-  display:flex;align-items:center;justify-content:center;font-size:34px;
-  box-shadow:0 8px 24px rgba(249,115,22,.3);
+  width:60px;height:60px;border-radius:16px;margin:0 auto 12px;
+  display:flex;align-items:center;justify-content:center;font-size:28px;
+  box-shadow:0 6px 18px rgba(249,115,22,.3);
   background:linear-gradient(135deg,var(--saffron),var(--gold));
 }
-.chead h2{font-size:24px;font-weight:900;color:var(--ink);letter-spacing:-.02em}
-.chead p{color:var(--muted);font-size:14px;margin-top:6px;line-height:1.5}
+.chead h2{font-size:22px;font-weight:900;color:#1c1917;letter-spacing:-.02em}
+.chead p{color:#78716c;font-size:14px;margin-top:6px;line-height:1.5}
 
 /* Badges */
 .badges{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:10px}
@@ -847,8 +847,8 @@ input::placeholder{color:var(--muted-2)}
 // Get your key from https://aistudio.google.com/apikey
 // Split your key: first half goes in _a, second half in _b
 // Example key AIzaSyABCDEFGHIJ1234567890 → _a='AIzaSyABCDEFG' _b='HIJ1234567890'
-const _a = 'AIzaSyCnPA_NXASixUl';
-const _b = 'yYKhwWEI4I2bOkAY2_Bc';
+const _a = 'AIzaSyAZCH3NiKY6fy6';
+const _b = 'H9kRhlEbdZJVrZVVrODs';
 const _k = _a + _b;
 // ─────────────────────────────────────────────────────────────────
 
@@ -2730,4 +2730,3 @@ document.addEventListener('keydown', function(e){
 </script>
 </body>
 </html>
-

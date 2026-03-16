@@ -1238,7 +1238,11 @@ async function sendMsg(){
        })}
     );
     hideTyping(tid);
-    if(!resp.ok){const e=await resp.json();throw new Error(e?.error?.message||'HTTP '+resp.status);}
+    if(!resp.ok){
+      let eBody = {};
+      try{ eBody = await resp.json(); }catch(pe){}
+      throw new Error(eBody?.error?.message || eBody?.error?.status || 'HTTP '+resp.status);
+    }
     const d=await resp.json();
     const reply=d.candidates?.[0]?.content?.parts?.[0]?.text||"Hmm, I couldn't get a response. Try again!";
     history.push({role:'model',parts:[{text:reply}]});
@@ -1265,11 +1269,13 @@ async function sendMsg(){
     else if(msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch'))
       friendly = "🌐 No internet connection. Please check your WiFi and try again!";
     else if(msg.includes('503') || msg.includes('overloaded') || msg.includes('unavailable'))
-      friendly = "😴 Gemini AI is a bit overloaded right now. Try again in a moment!";
+      friendly = "😴 The AI is a bit overloaded right now. Try again in a moment!";
     else if(msg.includes('400'))
       friendly = "🤔 Something went wrong with that request. Try asking differently!";
+    else if(msg.includes('404') || msg.includes('not found'))
+      friendly = "🔧 Model not available. Please let your teacher know!";
     else
-      friendly = "😕 Something went wrong. Please try again in a moment!";
+      friendly = "😕 Something went wrong (" + msg.slice(0,60) + "). Please try again!";
     addBubble('bot', friendly);
   }
   loading=false; updateSend();

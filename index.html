@@ -825,15 +825,6 @@ function getFingerprint(){
   return _fingerprint;
 }
 
-
-// ── BROWSER FINGERPRINT RATE LIMITING ───────────────────────
-function getFingerprint(){
-  if(_fingerprint) return _fingerprint;
-  const p=[navigator.language,navigator.platform,screen.width+'x'+screen.height,
-           screen.colorDepth,new Date().getTimezoneOffset(),navigator.hardwareConcurrency||''].join('|');
-  let h=0; for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;}
-  return _fingerprint='fp_'+Math.abs(h).toString(36);
-}
 function getRateLimitKey(){return 'vidya_req_'+getFingerprint()+'_'+new Date().toISOString().slice(0,10);}
 function getUserRequestCount(){try{return parseInt(localStorage.getItem(getRateLimitKey())||'0');}catch(e){return 0;}}
 function incrementUserRequestCount(){try{const k=getRateLimitKey(),c=getUserRequestCount()+1;localStorage.setItem(k,c);return c;}catch(e){return 0;}}
@@ -862,26 +853,11 @@ function checkRateLimit(){
 }
 
 
-function updateRequestBadge(){
-  const el = document.getElementById('reqBadge');
-  if(!el || !isGeminiModel()) return;
-  const remaining = getRemainingRequests();
-  const used = getUserRequestCount();
-  el.textContent = remaining + '/' + USER_DAILY_LIMIT + ' left today';
-  el.style.background = remaining <= 5 ? '#fef2f2' : remaining <= 10 ? '#fffbeb' : '#f0fdf4';
-  el.style.color = remaining <= 5 ? '#dc2626' : remaining <= 10 ? '#d97706' : '#16a34a';
-  el.style.borderColor = remaining <= 5 ? '#fecaca' : remaining <= 10 ? '#fde68a' : '#bbf7d0';
-}
-
-// ── PER-USER DAILY LIMIT ─────────────────────────────────────────
-const DAILY_LIMIT = 20; // requests per student per day — change as needed
-
-function getUsageKey(){ return 'vidya_usage_' + new Date().toISOString().slice(0,10); }
-function getUsageCount(){ return parseInt(localStorage.getItem(getUsageKey())||'0'); }
-function incrementUsage(){ localStorage.setItem(getUsageKey(), getUsageCount()+1); }
-function isLimitReached(){ return getUsageCount() >= DAILY_LIMIT; }
-function getRemainingRequests(){ return Math.max(0, DAILY_LIMIT - getUsageCount()); }
-// ─────────────────────────────────────────────────────────────────
+// ── MISSING STATE VARIABLES ──────────────────────────────────
+let AUTO_SPEAK = false;
+let WEB_SEARCH_ON = true;
+let _abortCtrl = null;
+let _lastUserMsg = null;
 
 function toggleAutoSpeak(){
   AUTO_SPEAK = !AUTO_SPEAK;
@@ -1332,12 +1308,6 @@ async function sendMsg(retryMsg){
     updateRequestBadge();
   }
 
-  // Check daily limit
-  if(isLimitReached()){
-    addBubble('bot', '📚 You have used all ' + DAILY_LIMIT + ' questions for today! Come back tomorrow for more. 😊\n\nTip: Use the 📐 Formulas & Notes tab for revision — no limit there!');
-    return;
-  }
-
   // Build display text for user bubble
   const displayTxt = txt || '(See uploaded file)';
   const hasFile = !!uploadedDataUrl;
@@ -1402,7 +1372,6 @@ async function sendMsg(retryMsg){
       showDiagramLinks((txt||_lastUserMsg||'')+' '+SUBJECT);
     }
     saveSession();
-    incrementUsage();
     // Show remaining count every 5 requests
     const rem = getRemainingRequests();
     if(rem <= 5 && rem > 0){
@@ -1864,14 +1833,13 @@ function submitQuizAnswer(cardId, answerText){
   // Build evaluation prompt
   const qtext = card.querySelector('.quiz-qtext').innerText;
   const chapter = card.querySelector('.quiz-chapter') ? card.querySelector('.quiz-chapter').innerText : '';
-  const evalPrompt = 'My answer to the question "' + qtext + '" is: ' + answer +
-    (correctAnswer ? '\n[Correct answer hint: ' + correctAnswer + ']' : '');
+  const evalPrompt = 'My answer to the question "' + qtext + '" is: ' + answer;
 
   // Show loading then get AI evaluation
   const tid = showTyping();
   loading = true;
   fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent?key=' + GEM_KEY,
+    'https://generativelanguage.googleapis.com/v1beta/models/'+CURRENT_MODEL+':generateContent?key=' + GEM_KEY,
     {method:'POST', headers:{'Content-Type':'application/json'},
      body: JSON.stringify({
        system_instruction: {parts:[{text: sysPrompt()}]},
@@ -1931,9 +1899,9 @@ function addBubble(role, text){
   row.className = 'msg-row ' + role;
   const html = formatMsg(text, role);
   if(role === 'bot')
-    row.innerHTML = '<div class="bot-av">🤖</div><div class="bubble bot">' + html + '</div>';
+    row.innerHTML = '<div class="bot-av">🤖</div><div class="msg-content"><div class="msg-sender">Vidya</div><div class="msg-text">' + html + '</div><div class="msg-actions"><button class="msg-action-btn" onclick="navigator.clipboard.writeText(this.closest(\'.msg-content\').querySelector(\'.msg-text\').innerText)">📋 Copy</button><button class="msg-action-btn" onclick="speakText(this.closest(\'.msg-content\').querySelector(\'.msg-text\').innerText)">🔊 Speak</button></div></div>';
   else
-    row.innerHTML = '<div class="bubble user">' + escHtml(text) + '</div>';
+    row.innerHTML = '<div class="user-msg-wrap"><div class="user-bubble">' + escHtml(text) + '</div></div>';
   inner.appendChild(row);
   scrollChat();
   // Auto-speak bot responses (only if user has enabled it)
@@ -2176,7 +2144,7 @@ function showTyping(){
   const msgs = THINKING_MSGS[SUBJECT] || THINKING_MSGS.default;
   const startMsg = msgs[Math.floor(Math.random()*msgs.length)];
 
-  row.innerHTML = `<div class="bot-av">🤖</div><div class="typing-bub"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div><div class="typing-msg" id="tmsg_${id}">${startMsg}</div></div>`;
+  row.innerHTML = `<div class="bot-av">🤖</div><div class="typing-bub"><div class="typing-inner"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div><div class="typing-msg" id="tmsg_${id}">${startMsg}</div></div></div>`;
   inner.appendChild(row);
   scrollChat();
 
@@ -2890,10 +2858,13 @@ function formatRefBody(text){
 }
 
 // Init ref on page load with all items visible
-window.addEventListener('DOMContentLoaded',()=>{ 
-  renderRef(); 
-  validateS1(); 
-  validateS2();
+window.addEventListener('DOMContentLoaded',()=>{
+  renderRef(); validateS1(); validateS2();
+  if(typeof loadSession==='function' && loadSession()){
+    const ni=document.getElementById('nameInput');
+    if(ni){ni.value=STU_NAME; if(typeof validateS2==='function') validateS2();}
+    if(typeof launchApp==='function') launchApp();
+  }
 });
 
 // ── VOICE INPUT (Speech to Text) ─────────────────────────────────

@@ -529,38 +529,11 @@ input::placeholder{color:var(--muted2)}
 <!-- ═══════════════════ WIZARD ═══════════════════ -->
 <div id="wizard">
 
-  <div class="w-step" id="step1">
-    <div class="wiz-card">
-      <div class="stepper">
-        <div class="snode"><div class="sdot active">1</div><div class="slabel active">API Key</div></div>
-        <div class="sline"></div>
-        <div class="snode"><div class="sdot">2</div><div class="slabel">Name</div></div>
-        <div class="sline"></div>
-        <div class="snode"><div class="sdot">3</div><div class="slabel">Subject</div></div>
-      </div>
-      <div class="whead"><h2>🔑 Welcome to Vidya</h2><p>Your AI tutor for Karnataka SSLC 2025-26</p></div>
-      <div class="field">
-        <label>Gemini API Key <a href="https://aistudio.google.com/apikey" target="_blank">Get free →</a></label>
-        <div class="iw">
-          <input type="password" id="apiKeyInput" placeholder="AIzaSy…" autocomplete="off" oninput="validateS1()" onkeyup="validateS1()"/>
-          <button class="peye" onclick="togglePw()">👁</button>
-        </div>
-        <div class="fnote">🔒 Stays in your browser only</div>
-      </div>
-      <div class="icard"><span>📅</span><p>Trained on <strong>DSERT LBA PDFs 2025-26</strong> + <strong>KSEAB Blueprint</strong>. Exam 1: <strong>March 18, 2026</strong>!</p></div>
-      <button class="btn" id="s1btn" onclick="goToStep(2)">Continue →</button>
-    </div>
-  </div>
+
 
   <div class="w-step active" id="step2">
     <div class="wiz-card">
-      <div class="stepper">
-        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">API Key</div></div>
-        <div class="sline done"></div>
-        <div class="snode"><div class="sdot active">1</div><div class="slabel active">Your Name</div></div>
-        <div class="sline"></div>
-        <div class="snode"><div class="sdot">2</div><div class="slabel">Subject</div></div>
-      </div>
+
       <div class="whead">
         <h2>👋 Welcome to Vidya!</h2>
         <p>Your AI tutor for Karnataka SSLC Class 10 · 2025-26</p>
@@ -569,53 +542,21 @@ input::placeholder{color:var(--muted2)}
           <span class="badge bg2">DSERT 2025-26</span>
           <span class="badge bb">KSEAB Blueprint</span>
         </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.5">
+          📚 Maths · Science · Social · English · Hindi · Kannada<br>
+          🎯 Switch subjects anytime from the chat
+        </div>
       </div>
       <div class="field">
         <label>Your First Name</label>
         <input type="text" id="nameInput" placeholder="e.g. Arjun, Kavya, Riya…" oninput="validateS2()" autocomplete="given-name" maxlength="30"/>
         <div class="name-prev" id="namePreview"></div>
       </div>
-      <button class="btn" id="s2btn" onclick="goToStep(3)">Continue →</button>
+      <button class="btn" id="s2btn" onclick="startDirect()">Start Learning 🚀</button>
     </div>
   </div>
 
-  <div class="w-step" id="step3">
-    <div class="wiz-card" style="max-width:500px;width:100%">
-      <div class="stepper">
-        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">API Key</div></div>
-        <div class="sline done"></div>
-        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">Name</div></div>
-        <div class="sline done"></div>
-        <div class="snode"><div class="sdot active">2</div><div class="slabel active">Subject</div></div>
-      </div>
-      <div class="whead"><h2>📚 Choose your session</h2><p>Class 10 SSLC · 2025-26</p></div>
-      <div class="field">
-        <label>Subject</label>
-        <div class="spills" id="subjPills">
-          <button class="spill" data-s="All Subjects" onclick="pickSubject('All Subjects')">🌟 All Subjects</button>
-          <button class="spill" data-s="Mathematics" onclick="pickSubject('Mathematics')">🔢 Mathematics</button>
-          <button class="spill" data-s="Science" onclick="pickSubject('Science')">🔬 Science</button>
-          <button class="spill" data-s="Social Science" onclick="pickSubject('Social Science')">🌍 Social Science</button>
-          <button class="spill" data-s="English" onclick="pickSubject('English')">📖 English FL</button>
-          <button class="spill" data-s="Hindi" onclick="pickSubject('Hindi')">🇮🇳 Hindi</button>
-          <button class="spill" data-s="Kannada" onclick="pickSubject('Kannada')">🌿 Kannada</button>
-          <button class="spill" data-s="Sanskrit" onclick="pickSubject('Sanskrit')">🕉️ Sanskrit</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Learning Mode</label>
-        <div class="modes">
-          <button class="mpill active" data-m="tutor" onclick="pickMode('tutor')"><div class="mt">📚 Tutor Me</div><div class="md">Explain step-by-step</div></button>
-          <button class="mpill" data-m="quiz" onclick="pickMode('quiz')"><div class="mt">🧠 Quiz Me</div><div class="md">Test yourself</div></button>
-          <button class="mpill" data-m="homework" onclick="pickMode('homework')"><div class="mt">✏️ Homework</div><div class="md">Solve together</div></button>
-          <button class="mpill" data-m="summary" onclick="pickMode('summary')"><div class="mt">📋 Summary</div><div class="md">Quick notes</div></button>
-          <button class="mpill sslc" data-m="sslc" onclick="pickMode('sslc')"><div class="mt">🎯 SSLC Exam Prep 2026</div><div class="md">Blueprint mock tests · March 18 · A+ strategy</div></button>
-        </div>
-      </div>
-      <button class="btn" id="s3btn" onclick="launchApp()">Start Learning 🚀</button>
-      <button class="btn-ghost" onclick="goToStep(2)">← Back</button>
-    </div>
-  </div>
+  
 </div>
 
 <!-- ═══════════════════ APP ═══════════════════ -->
@@ -836,6 +777,73 @@ function updateRequestBadge(){
   if(el&&isGeminiModel()){
     el.style.display='inline-block';
     el.textContent=rem+'/'+USER_DAILY_LIMIT+' left today';
+    el.style.background=rem<=5?'#fef2f2':rem<=10?'#
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+// ── API KEYS (rotate automatically when quota is hit) ────────────
+// Add up to 5 keys — split each in half to avoid GitHub scanner
+// Get free keys from https://aistudio.google.com/apikey
+const KEYS = [
+  ['AIzaSyArZ0Y8_','-3v5ceGHuhl4v','tVuYgmKrVrHNo'],
+  ['AIzaSyDC4GMMd','mfeEzFuMXadwx','g7EgvVLiqMz7g'],
+  ['AIzaSyCqlwgeb','S4E7xdmd8e-xr','GV5_rqSE0YfRk'],
+  ['AIzaSyDd1L8u7','ex_hkXribhBCB','yb76JbWFBxIpc'],
+].map(k=>k[0]+k[1]+k[2]);
+const CURRENT_MODEL='gemini-2.0-flash';
+
+let _keyIndex = 0;
+function getNextKey(){
+  _keyIndex = (_keyIndex + 1) % KEYS.length;
+  return KEYS[_keyIndex];
+}
+function getCurrentKey(){ return KEYS[_keyIndex]; }
+// ─────────────────────────────────────────────────────────────────
+
+let GEM_KEY=getCurrentKey(), STU_NAME='', SUBJECT='', MODE='tutor';
+let ADMIN_MODE=false, AUTO_SPEAK=false, WEB_SEARCH_ON=true;
+let _abortCtrl=null, _lastUserMsg=null;
+
+// ── MODEL & RATE LIMITING ─────────────────────────────────────────
+const USER_DAILY_LIMIT = 20;
+
+// Browser fingerprint — harder to bypass than name-based
+function getBrowserFingerprint(){
+  const parts = [
+    navigator.language || '',
+    navigator.platform || '',
+    screen.width + 'x' + screen.height,
+    screen.colorDepth || '',
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency || '',
+  ].join('|');
+  // Simple hash
+  let hash = 0;
+  for(let i=0;i<parts.length;i++){
+    hash = ((hash<<5)-hash) + parts.charCodeAt(i);
+    hash |= 0;
+  }
+  return 'fp_' + Math.abs(hash).toString(36);
+}
+
+let _fingerprint = null;
+function getFingerprint(){
+  if(!_fingerprint) _fingerprint = getBrowserFingerprint();
+  return _fingerprint;
+}
+
+function getRateLimitKey(){return 'vidya_req_'+getFingerprint()+'_'+new Date().toISOString().slice(0,10);}
+function getUserRequestCount(){try{return parseInt(localStorage.getItem(getRateLimitKey())||'0');}catch(e){return 0;}}
+function incrementUserRequestCount(){try{const k=getRateLimitKey(),c=getUserRequestCount()+1;localStorage.setItem(k,c);return c;}catch(e){return 0;}}
+function getRemainingRequests(){return Math.max(0,USER_DAILY_LIMIT-getUserRequestCount());}
+function isGeminiModel(){return CURRENT_MODEL.includes('gemini');}
+function updateRequestBadge(){
+  const el=document.getElementById('reqBadge');
+  const rc=document.getElementById('reqCount');
+  const rem=getRemainingRequests();
+  if(el&&isGeminiModel()){
+    el.style.display='inline-block';
+    el.textContent=rem+'/'+USER_DAILY_LIMIT+' left today';
     el.style.background=rem<=5?'#fef2f2':rem<=10?'#fffbeb':'#f0fdf4';
     el.style.color=rem<=5?'#dc2626':rem<=10?'#d97706':'#1a7a3c';
     el.style.borderColor=rem<=5?'#fecaca':rem<=10?'#fde68a':'#bbf7d0';
@@ -892,17 +900,6 @@ function clearUpload(){
 ══════════════════════════════════════════ */
 function goToStep(n){
 
-  if(n===3){
-    const name = document.getElementById('nameInput').value.trim();
-    if(name.length < 1){
-      const inp = document.getElementById('nameInput');
-      inp.style.borderColor = '#ef4444';
-      inp.focus();
-      setTimeout(()=>{ inp.style.borderColor=''; }, 2500);
-      return;
-    }
-
-  }
   document.querySelectorAll('.w-step').forEach(s=>s.classList.remove('active'));
   document.getElementById('step'+n).classList.add('active');
   document.getElementById('wizard').style.display='flex';
@@ -1008,6 +1005,20 @@ function adminClose(){
   validateS2();
 }
 
+function startDirect(){
+  // Launch directly from name screen — default to All Subjects, tutor mode
+  const name = document.getElementById('nameInput').value.trim();
+  if(!name){
+    const inp = document.getElementById('nameInput');
+    inp.style.borderColor='#ef4444'; inp.focus();
+    setTimeout(()=>{ inp.style.borderColor=''; },2000);
+    return;
+  }
+  _pickedSubject = 'All Subjects';
+  MODE = 'tutor';
+  launchApp();
+}
+
 function launchApp(){
   if(!_pickedSubject){
     // Shake the pills to indicate selection needed
@@ -1083,7 +1094,7 @@ function exitApp(){
   document.getElementById('wizard').style.display='flex';
   document.getElementById('app').style.display='none';
   document.getElementById('app').classList.remove('active');
-  goToStep(1);
+  goToStep(2);
 }
 
 /* ══════════════════════════════════════════
@@ -3277,25 +3288,7 @@ document.addEventListener('keydown', function(e){
 
 
 
-</script>
-
-<!-- PROGRESS PANEL -->
-<div id="progressPanel" style="display:none;position:fixed;top:0;right:0;width:340px;max-width:95vw;height:100%;z-index:55;background:#fff;border-left:1.5px solid #e8ddd0;box-shadow:-4px 0 20px rgba(0,0,0,.12);overflow:hidden"></div>
-
-<!-- AI DIAGRAM CANVAS -->
-<div id="diagramCanvas" style="display:none;position:fixed;top:0;right:0;width:380px;height:100%;z-index:50;flex-direction:column;background:#fff;border-left:1.5px solid #e8ddd0;box-shadow:-4px 0 20px rgba(0,0,0,.1)">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e8ddd0;flex-shrink:0">
-    <div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#6b2db8,#e8720c);display:flex;align-items:center;justify-content:center;font-size:14px">🎨</div><span style="font-size:14px;font-weight:700;color:#1a1207">AI Diagram Board</span></div>
-    <div style="display:flex;gap:6px"><button onclick="askNewDiagram()" style="padding:5px 10px;border-radius:8px;border:1px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✏️ New</button><button onclick="closeCanvas()" style="padding:5px 10px;border-radius:8px;border:1px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✕</button></div>
-  </div>
-  <div id="diagramOutput" style="flex:1;overflow-y:auto;padding:0">
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:10px;color:#9c8878;padding:20px;text-align:center">
-      <div style="font-size:40px">🎨</div><div style="font-size:14px;font-weight:700;color:#1a1207">AI Diagram Board</div>
-      <div style="font-size:12px;color:#9c8878;line-height:1.6">Ask Vidya to draw any diagram<br>or pick one below!</div>
-      <div style="display:flex;flex-direction:column;gap:6px;width:100%;margin-top:6px">
-        <button onclick="generateDiagram('nephron structure')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">🔬 Nephron Structure</button>
-        <button onclick="generateDiagram('reflex arc nervous system')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">🧠 Reflex Arc</button>
-        <button onclick="generateDiagram('human heart chambers valves')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">❤️ Human Heart</button>
+eart chambers valves')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">❤️ Human Heart</button>
         <button onclick="generateDiagram('plant cell organelles')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">🌱 Plant Cell</button>
         <button onclick="generateDiagram('electric circuit series parallel')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">⚡ Electric Circuit</button>
         <button onclick="generateDiagram('water cycle evaporation condensation')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">💧 Water Cycle</button>

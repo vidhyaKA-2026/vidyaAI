@@ -2,540 +2,569 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Vidya — Karnataka SSLC AI Tutor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
+/* ════════════════════════════════════════
+   BASE
+════════════════════════════════════════ */
+:root{
+  --bg:#f9f5f0;
+  --surface:#ffffff;
+  --surface2:#f5f0ea;
+  --border:#e8ddd0;
+  --border2:#d4c4b0;
+  --ink:#1a1207;
+  --ink2:#3d2e1a;
+  --ink3:#6b5a45;
+  --muted:#9c8878;
+  --muted2:#c4b4a4;
+  --saffron:#e8720c;
+  --saffron-d:#c45e08;
+  --saffron-l:#fff3e8;
+  --saffron-glow:rgba(232,114,12,.15);
+  --gold:#d4900a;
+  --green:#1a7a3c;
+  --green-l:#e8f5ec;
+  --blue:#1a5cb8;
+  --blue-l:#e8f0fb;
+  --red:#c42020;
+  --red-l:#fdeaea;
+  --violet:#6b2db8;
+  --violet-l:#f0ebfb;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Courier New',monospace;
+  --r4:4px;--r8:8px;--r12:12px;--r16:16px;--r20:20px;--r999:999px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,.1);
+  --shadow-lg:0 12px 40px rgba(0,0,0,.12);
+  --t:.15s ease;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#fff8f0;color:#1c1917}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
 
-/* ── BACKGROUND ── */
-body::before{
-  content:'';position:fixed;inset:0;z-index:0;
-  background:linear-gradient(135deg,#fef3c7,#fde8d8,#dbeafe);
-  pointer-events:none;
-}
+/* ════════════════════════════════════════
+   ANIMATED BG — subject symbols
+════════════════════════════════════════ */
+.bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+  background:linear-gradient(160deg,#fef6ec 0%,#fdebd8 40%,#e8f0fb 100%)}
+.sym{position:absolute;font-weight:900;opacity:.07;user-select:none;
+  animation:symfloat var(--d,22s) ease-in-out infinite;animation-delay:var(--dl,0s)}
+@keyframes symfloat{0%,100%{transform:translateY(0) rotate(var(--r0,0deg))}
+  40%{transform:translateY(-16px) rotate(var(--r1,4deg))}
+  70%{transform:translateY(8px) rotate(var(--r2,-3deg))}}
+.shape{position:absolute;opacity:.06;animation:symfloat var(--d,24s) ease-in-out infinite;
+  animation-delay:var(--dl,0s)}
 
-/* Floating subject symbols */
-.sym{
-  position:fixed;z-index:1;pointer-events:none;user-select:none;
-  opacity:.1;font-weight:900;color:#1c1917;
-  animation:float1 20s ease-in-out infinite;
-}
-@keyframes float1{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+/* ════════════════════════════════════════
+   WIZARD
+════════════════════════════════════════ */
+#wizard{position:relative;z-index:10;height:100%;display:flex;
+  align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+.w-step{display:none;width:100%;max-width:460px}
+.w-step.active{display:block;animation:wiz-pop .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes wiz-pop{from{opacity:0;transform:scale(.95) translateY(12px)}to{opacity:1;transform:none}}
 
-/* ── WIZARD ── */
-#wizard{
-  position:relative;z-index:10;height:100%;
-  display:flex;align-items:center;justify-content:center;
-  padding:16px;overflow-y:auto;
-}
-.w-step{display:none;width:100%;max-width:440px}
-.w-step.active{display:block}
-
-/* Card */
-.card{
-  background:#ffffff;border-radius:20px;padding:32px 28px;
-  border:2px solid #fed7aa;
-  box-shadow:0 8px 32px rgba(249,115,22,.15),0 2px 8px rgba(0,0,0,.08);
-}
-@media(max-width:480px){.card{padding:24px 18px}}
-
-/* ── VOICE BUTTONS ── */
-.voice-btn {
-  width:42px;height:42px;border-radius:12px;border:none;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;flex-shrink:0;font-size:18px;transition:all .15s;
-  background:#fff7ed;color:#f97316;border:2px solid #fed7aa;
-}
-.voice-btn:hover{background:#f97316;color:#fff;border-color:#f97316}
-.voice-btn.listening{
-  background:#dc2626;color:#fff;border-color:#dc2626;
-  animation:pulse-rec 1s ease-in-out infinite;
-}
-.voice-btn.speaking{
-  background:#16a34a;color:#fff;border-color:#16a34a;
-  animation:pulse-speak 1s ease-in-out infinite;
-}
-@keyframes pulse-rec{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}50%{box-shadow:0 0 0 8px rgba(220,38,38,0)}}
-@keyframes pulse-speak{0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,.4)}50%{box-shadow:0 0 0 8px rgba(22,163,74,0)}}
-
-.voice-status{
-  font-size:11px;color:#f97316;font-weight:700;text-align:center;
-  margin-top:4px;height:16px;transition:all .2s;
-}
-
-/* ── MOBILE RESPONSIVE ── */
-@media(max-width:600px){
-  /* Wizard */
-  #wizard{padding:12px;align-items:flex-start;padding-top:20px}
-  .card{border-radius:16px;padding:20px 16px}
-  .chead h2{font-size:19px}
-  .stepper{margin-bottom:18px}
-  .sdot{width:30px;height:30px;font-size:12px}
-  .sline{width:30px}
-  .badges{gap:4px}
-  .badge{font-size:10px;padding:3px 8px}
-  .spills{gap:6px}
-  .spill{padding:7px 12px;font-size:12px}
-  .modes{grid-template-columns:1fr 1fr;gap:6px}
-  .mpill{padding:10px 10px}
-  .mt{font-size:12px}
-  .md{font-size:10px}
-  .btn{padding:13px;font-size:14px}
-
-  /* App topbar */
-  .topbar{height:50px;padding:0 12px}
-  .tb-name{font-size:13px}
-  .tb-sub{display:none}
-  .tbbtn{padding:5px 9px;font-size:11px}
-
-  /* Subject strip — horizontal scroll */
-  .subj-strip{padding:0 4px}
-  .stab{padding:8px 10px;font-size:11px;gap:3px}
-
-  /* Feature tabs */
-  .feat-tabs{padding:0 12px}
-  .ftab{padding:9px 12px;font-size:12px}
-
-  /* Chat */
-  .chat-scroll{padding:12px 10px}
-  .bubble{font-size:13px;padding:10px 13px;max-width:85%}
-  .bot-av{width:28px;height:28px;font-size:14px;border-radius:8px}
-  .msgs-inner{gap:10px}
-  .chip{font-size:11px;padding:5px 10px}
-
-  /* Input bar — mobile optimized */
-  .input-bar{padding:10px 10px}
-  .input-row{gap:6px}
-  .chat-input{padding:10px 12px;font-size:14px}
-  .send-btn{width:38px;height:38px;border-radius:10px}
-  .voice-btn{width:38px;height:38px;border-radius:10px;font-size:16px}
-  .upload-strip{margin-top:6px}
-  .upload-btn{font-size:11px;padding:4px 10px}
-  .input-note{font-size:9.5px}
-
-  /* Reference tab */
-  .ref-scroll{padding:10px}
-  .ref-filters{grid-template-columns:1fr 1fr;gap:7px}
-  .ref-select{font-size:12px;padding:8px 28px 8px 10px}
-  .ref-card-title{font-size:12.5px}
-  .ref-body{font-size:12px}
-
-  /* Quiz cards */
-  .quiz-card{max-width:90%;padding:14px}
-  .quiz-qtext{font-size:13px}
-  .quiz-opt{font-size:12.5px;padding:9px 11px}
-}
-
-/* Very small phones */
-@media(max-width:360px){
-  .stab{padding:7px 8px;font-size:10.5px}
-  .spill{padding:6px 10px;font-size:11.5px}
-  .bubble{font-size:12.5px}
-}
-
-/* Landscape mobile */
-@media(max-width:800px) and (orientation:landscape){
-  #wizard{padding-top:10px}
-  .card{padding:16px}
-  .chead{margin-bottom:12px}
-  .chead h2{font-size:18px}
-  .stepper{margin-bottom:14px}
-}
+.wiz-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r20);
+  padding:36px 32px;box-shadow:0 8px 40px rgba(232,114,12,.12),0 2px 8px rgba(0,0,0,.06)}
+@media(max-width:480px){.wiz-card{padding:24px 18px}}
 
 /* Stepper */
-.stepper{display:flex;align-items:center;justify-content:center;margin-bottom:24px}
-.snode{display:flex;flex-direction:column;align-items:center;gap:4px}
-.sdot{
-  width:34px;height:34px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:700;border:2px solid #d6d3d1;
-  background:#fff;color:#a8a29e;
-}
-.sdot.active{background:#f97316;border-color:#f97316;color:#fff;box-shadow:0 0 0 4px rgba(249,115,22,.2)}
-.sdot.done{background:#16a34a;border-color:#16a34a;color:#fff}
-.slabel{font-size:10px;font-weight:700;color:#a8a29e;letter-spacing:.04em;text-transform:uppercase}
-.slabel.active{color:#f97316}
-.slabel.done{color:#16a34a}
-.sline{width:40px;height:2px;background:#d6d3d1;margin-bottom:14px}
-.sline.done{background:#16a34a}
+.stepper{display:flex;align-items:center;justify-content:center;margin-bottom:28px}
+.snode{display:flex;flex-direction:column;align-items:center;gap:5px}
+.sdot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;border:2px solid var(--border2);color:var(--muted);background:var(--surface2);transition:all .25s}
+.sdot.active{background:var(--saffron);border-color:var(--saffron);color:#fff;
+  box-shadow:0 0 0 4px var(--saffron-glow)}
+.sdot.done{background:var(--green);border-color:var(--green);color:#fff}
+.slabel{font-size:10px;font-weight:600;color:var(--muted2);letter-spacing:.04em;text-transform:uppercase}
+.slabel.active{color:var(--saffron)}
+.slabel.done{color:var(--green)}
+.sline{width:40px;height:2px;background:var(--border2);margin-bottom:14px;transition:background .25s}
+.sline.done{background:var(--green)}
 
-/* Card head */
-.chead{text-align:center;margin-bottom:22px}
-.chead h2{font-size:22px;font-weight:800;color:#1c1917;margin-bottom:6px}
-.chead p{color:#78716c;font-size:14px;line-height:1.5}
-
-/* Badges */
-.badges{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:10px}
-.badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+/* Wiz head */
+.whead{text-align:center;margin-bottom:24px}
+.whead h2{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:6px}
+.whead p{color:var(--ink3);font-size:14px;line-height:1.5}
+.badges{display:flex;justify-content:center;gap:5px;flex-wrap:wrap;margin-top:10px}
+.badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:var(--r999)}
 .bo{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
-.bg{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.bg2{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
 .bb{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
 
-/* Fields */
+/* Form */
 .field{margin-bottom:16px}
-.field label{display:block;font-size:12px;font-weight:700;color:#78716c;margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}
-.field label a{color:#f97316;text-transform:none;text-decoration:none;font-size:12px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--ink3);
+  margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}
+.field label a{color:var(--saffron);text-transform:none;text-decoration:none;font-size:12px}
 .field label a:hover{text-decoration:underline}
 .iw{position:relative}
 input[type="password"],input[type="text"]{
-  width:100%;border:2px solid #d6d3d1;border-radius:12px;
-  padding:12px 16px;font-size:15px;color:#1c1917;
-  background:#fafaf9;font-family:inherit;outline:none;
-  transition:border-color .15s;
-}
-input:focus{border-color:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,.15)}
-input::placeholder{color:#a8a29e}
-.peye{
-  position:absolute;right:12px;top:50%;transform:translateY(-50%);
-  background:none;border:none;cursor:pointer;color:#a8a29e;font-size:16px;
-}
-.fnote{font-size:11px;color:#a8a29e;margin-top:5px}
-.icard{
-  background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;
-  padding:11px 14px;display:flex;gap:8px;margin-bottom:16px;
-  font-size:13px;color:#92400e;line-height:1.5;
-}
-.name-prev{
-  margin-top:8px;padding:10px 14px;border-radius:10px;
-  background:#fff7ed;border:1px solid #fed7aa;
-  font-size:13px;font-weight:700;color:#92400e;
-  text-align:center;display:none;
-}
+  width:100%;border:1.5px solid var(--border2);border-radius:var(--r12);
+  padding:11px 15px;font-size:15px;color:var(--ink);background:var(--surface2);
+  font-family:var(--font);outline:none;transition:border-color var(--t),box-shadow var(--t)}
+input:focus{border-color:var(--saffron);box-shadow:0 0 0 3px var(--saffron-glow);background:#fff}
+input::placeholder{color:var(--muted2)}
+.peye{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:4px;transition:color var(--t)}
+.peye:hover{color:var(--saffron)}
+.fnote{font-size:11px;color:var(--muted2);margin-top:5px}
+.icard{background:var(--saffron-l);border:1px solid #fed7aa;border-radius:var(--r12);
+  padding:11px 14px;display:flex;gap:8px;margin-bottom:16px;font-size:13px;color:#92400e;line-height:1.5}
+.name-prev{margin-top:8px;padding:10px 14px;border-radius:var(--r8);background:var(--saffron-l);
+  border:1px solid #fed7aa;font-size:13px;font-weight:600;color:#92400e;text-align:center;display:none}
 
-/* Subject pills */
+/* Pills */
 .spills{display:flex;flex-wrap:wrap;gap:7px}
-.spill{
-  padding:8px 14px;border-radius:999px;border:2px solid #d6d3d1;
-  background:#fafaf9;color:#78716c;font-size:13px;font-weight:700;
-  cursor:pointer;font-family:inherit;transition:all .15s;
-}
-.spill:hover{border-color:#f97316;color:#f97316;background:#fff7ed}
-.spill.sel{color:#fff;border-color:transparent}
-.spill[data-s="All Subjects"].sel{background:#7c3aed}
+.spill{padding:8px 14px;border-radius:var(--r999);border:1.5px solid var(--border2);
+  background:var(--surface2);color:var(--ink3);font-size:13px;font-weight:600;
+  cursor:pointer;font-family:var(--font);transition:all var(--t)}
+.spill:hover{border-color:var(--saffron);color:var(--saffron);background:var(--saffron-l)}
+.spill.sel{color:#fff;border-color:transparent;box-shadow:var(--shadow-sm)}
+.spill[data-s="All Subjects"].sel{background:var(--violet)}
 .spill[data-s="Mathematics"].sel{background:#2563eb}
-.spill[data-s="Science"].sel{background:#16a34a}
-.spill[data-s="Social Science"].sel{background:#dc2626}
-.spill[data-s="English"].sel{background:#d97706}
+.spill[data-s="Science"].sel{background:var(--green)}
+.spill[data-s="Social Science"].sel{background:var(--red)}
+.spill[data-s="English"].sel{background:var(--gold)}
 .spill[data-s="Hindi"].sel{background:#0891b2}
-.spill[data-s="Kannada"].sel{background:#15803d}
-.spill[data-s="Sanskrit"].sel{background:#b45309}
+.spill[data-s="Kannada"].sel{background:#166534}
+.spill[data-s="Sanskrit"].sel{background:#92400e}
 
 /* Mode cards */
-.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mpill{
-  padding:11px 13px;border-radius:12px;border:2px solid #d6d3d1;
-  background:#fafaf9;cursor:pointer;font-family:inherit;text-align:left;transition:all .15s;
-}
-.mpill:hover{border-color:#f97316;background:#fff7ed}
-.mpill.active{border-color:#f97316;background:#fff7ed;box-shadow:0 0 0 3px rgba(249,115,22,.15)}
-.mpill.sslc{grid-column:span 2;border-color:#ddd6fe;background:#f5f3ff}
-.mpill.sslc:hover,.mpill.sslc.active{border-color:#7c3aed;background:#ede9fe}
-.mt{font-size:13px;font-weight:800;color:#1c1917}
-.mpill.sslc .mt{color:#7c3aed}
-.md{font-size:11px;color:#78716c;margin-top:2px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.mpill{padding:11px 13px;border-radius:var(--r12);border:1.5px solid var(--border2);
+  background:var(--surface2);cursor:pointer;font-family:var(--font);text-align:left;transition:all var(--t)}
+.mpill:hover{border-color:var(--saffron);background:var(--saffron-l)}
+.mpill.active{border-color:var(--saffron);background:var(--saffron-l);box-shadow:0 0 0 3px var(--saffron-glow)}
+.mpill.sslc{grid-column:span 2;border-color:#ddd6fe;background:var(--violet-l)}
+.mpill.sslc:hover,.mpill.sslc.active{border-color:var(--violet);background:#ede9fe}
+.mt{font-size:13px;font-weight:700;color:var(--ink)}
+.mpill.sslc .mt{color:var(--violet)}
+.md{font-size:11px;color:var(--muted);margin-top:2px}
 
 /* Buttons */
-.btn{
-  width:100%;padding:14px;border-radius:12px;border:none;
-  font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;
-  background:linear-gradient(135deg,#f97316,#f59e0b);color:#fff;
-  box-shadow:0 4px 16px rgba(249,115,22,.35);transition:all .15s;
-}
-.btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(249,115,22,.45)}
-.btn:active{transform:translateY(0)}
-.btn-ghost{
-  width:100%;padding:12px;border-radius:12px;border:2px solid #d6d3d1;
-  background:transparent;color:#78716c;font-size:14px;font-weight:700;
-  cursor:pointer;font-family:inherit;margin-top:8px;transition:all .15s;
-}
-.btn-ghost:hover{border-color:#f97316;color:#f97316}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.btn{width:100%;padding:13px;border-radius:var(--r12);border:none;
+  font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);
+  background:linear-gradient(135deg,var(--saffron),var(--gold));color:#fff;
+  box-shadow:0 4px 16px rgba(232,114,12,.3);transition:all var(--t)}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(232,114,12,.4)}
+.btn-ghost{width:100%;padding:11px;border-radius:var(--r12);border:1.5px solid var(--border2);
+  background:transparent;color:var(--ink3);font-size:14px;font-weight:600;
+  cursor:pointer;font-family:var(--font);margin-top:8px;transition:all var(--t)}
+.btn-ghost:hover{border-color:var(--saffron);color:var(--saffron)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 
-/* ── APP ── */
-#app{display:none;height:100%;flex-direction:column;position:relative;z-index:10;background:#fff8f0}
+/* ════════════════════════════════════════
+   APP SHELL — Claude-like layout
+════════════════════════════════════════ */
+#app{display:none;height:100%;flex-direction:column;position:relative;z-index:10;background:var(--bg)}
 #app.active{display:flex}
 
+/* Topbar — clean like Claude */
 .topbar{
-  background:#fff;border-bottom:2px solid #fed7aa;
-  padding:0 16px;height:54px;display:flex;align-items:center;
-  justify-content:space-between;flex-shrink:0;gap:12px;
-  box-shadow:0 2px 8px rgba(249,115,22,.1);
+  background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  height:52px;padding:0 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;gap:12px;
+  box-shadow:0 1px 0 var(--border);
 }
-.tb-brand{display:flex;align-items:center;gap:9px;min-width:0}
-.tb-logo{
-  width:34px;height:34px;border-radius:10px;flex-shrink:0;
-  background:linear-gradient(135deg,#f97316,#f59e0b);
-  display:flex;align-items:center;justify-content:center;font-size:17px;
-}
-.tb-name{font-size:14px;font-weight:800;color:#1c1917;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tb-sub{font-size:11px;color:#a8a29e;font-weight:600}
-.tb-actions{display:flex;gap:6px;flex-shrink:0}
-.tbbtn{
-  font-size:12px;font-weight:700;padding:6px 11px;border-radius:8px;
-  border:1.5px solid #d6d3d1;background:#fff;color:#78716c;
-  cursor:pointer;font-family:inherit;transition:all .15s;
-}
-.tbbtn:hover{border-color:#f97316;color:#f97316}
-.tbbtn.danger:hover{border-color:#dc2626;color:#dc2626}
+.tb-left{display:flex;align-items:center;gap:10px;min-width:0}
+.tb-logo{width:30px;height:30px;border-radius:8px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--saffron),var(--gold));
+  display:flex;align-items:center;justify-content:center;font-size:15px}
+.tb-app-name{font-size:15px;font-weight:700;color:var(--ink)}
+.tb-mid{flex:1;display:flex;justify-content:center}
+.tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 
-.subj-strip{
-  background:#fff;border-bottom:2px solid #fed7aa;
-  display:flex;overflow-x:auto;flex-shrink:0;padding:0 6px;
+/* User avatar — name on top right */
+.user-chip{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 10px 5px 6px;border-radius:var(--r999);
+  background:var(--surface2);border:1.5px solid var(--border);
+  cursor:pointer;transition:all var(--t);
 }
+.user-chip:hover{border-color:var(--saffron);background:var(--saffron-l)}
+.user-av{
+  width:26px;height:26px;border-radius:50%;
+  background:linear-gradient(135deg,var(--saffron),var(--gold));
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#fff;flex-shrink:0;
+}
+.user-name-display{font-size:12px;font-weight:600;color:var(--ink2);max-width:80px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.req-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:var(--r999);
+  background:var(--green-l);color:var(--green);border:1px solid #bbf7d0;
+  white-space:nowrap;display:none}
+.tbbtn{font-size:12px;font-weight:600;padding:5px 10px;border-radius:var(--r8);
+  border:1px solid var(--border);background:var(--surface2);color:var(--ink3);
+  cursor:pointer;font-family:var(--font);transition:all var(--t)}
+.tbbtn:hover{border-color:var(--saffron);color:var(--saffron)}
+.tbbtn.danger:hover{border-color:var(--red);color:var(--red)}
+
+/* Subject tab strip */
+.subj-strip{background:rgba(255,255,255,.9);border-bottom:1px solid var(--border);
+  display:flex;overflow-x:auto;flex-shrink:0;padding:0 8px}
 .subj-strip::-webkit-scrollbar{height:0}
-.stab{
-  display:flex;align-items:center;gap:4px;padding:9px 13px;
-  font-size:12px;font-weight:700;color:#a8a29e;
-  border:none;background:none;cursor:pointer;font-family:inherit;
-  border-bottom:2.5px solid transparent;margin-bottom:-2px;
-  flex-shrink:0;transition:all .15s;white-space:nowrap;
-}
-.stab:hover{color:#1c1917}
-.stab.active{color:#f97316;border-bottom-color:#f97316;background:#fff7ed}
-.stab[data-s="Mathematics"].active{color:#2563eb;border-bottom-color:#2563eb;background:#eff6ff}
-.stab[data-s="Science"].active{color:#15803d;border-bottom-color:#15803d;background:#f0fdf4}
-.stab[data-s="Social Science"].active{color:#dc2626;border-bottom-color:#dc2626;background:#fef2f2}
-.stab[data-s="English"].active{color:#d97706;border-bottom-color:#d97706;background:#fffbeb}
-.stab[data-s="Hindi"].active{color:#0891b2;border-bottom-color:#0891b2;background:#ecfeff}
-.stab[data-s="Kannada"].active{color:#15803d;border-bottom-color:#166534;background:#f0fdf4}
+.stab{display:flex;align-items:center;gap:4px;padding:8px 12px;
+  font-size:12px;font-weight:600;color:var(--muted);
+  border:none;background:none;cursor:pointer;font-family:var(--font);
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  flex-shrink:0;transition:all var(--t);white-space:nowrap}
+.stab:hover{color:var(--ink)}
+.stab.active{color:var(--saffron);border-bottom-color:var(--saffron)}
+.stab[data-s="Mathematics"].active{color:#2563eb;border-bottom-color:#2563eb}
+.stab[data-s="Science"].active{color:var(--green);border-bottom-color:var(--green)}
+.stab[data-s="Social Science"].active{color:var(--red);border-bottom-color:var(--red)}
+.stab[data-s="English"].active{color:var(--gold);border-bottom-color:var(--gold)}
+.stab[data-s="Hindi"].active{color:#0891b2;border-bottom-color:#0891b2}
+.stab[data-s="Kannada"].active{color:#166534;border-bottom-color:#166534}
 
-.feat-tabs{
-  display:flex;background:#fff;border-bottom:1.5px solid #e7e5e4;flex-shrink:0;padding:0 16px;
-}
-.ftab{
-  padding:10px 16px;font-size:13px;font-weight:700;color:#a8a29e;
-  border:none;background:none;cursor:pointer;font-family:inherit;
-  border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:all .15s;
-}
-.ftab:hover{color:#1c1917}
-.ftab.active{color:#f97316;border-bottom-color:#f97316}
+/* Feature tabs */
+.feat-tabs{display:flex;background:#fff;border-bottom:1px solid var(--border);
+  flex-shrink:0;padding:0 16px}
+.ftab{padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);
+  border:none;background:none;cursor:pointer;font-family:var(--font);
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--t)}
+.ftab:hover{color:var(--ink)}
+.ftab.active{color:var(--saffron);border-bottom-color:var(--saffron)}
 
+/* ════════════════════════════════════════
+   CHAT PANEL — Claude-like
+════════════════════════════════════════ */
 .tab-panel{flex:1;overflow:hidden;display:none;flex-direction:column}
 .tab-panel.active{display:flex}
 
-.chat-scroll{flex:1;overflow-y:auto;padding:16px;background:#fff8f0}
-.chat-scroll::-webkit-scrollbar{width:4px}
-.chat-scroll::-webkit-scrollbar-thumb{background:#fed7aa;border-radius:10px}
-.msgs-inner{max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.chat-scroll{flex:1;overflow-y:auto;padding:24px 16px;background:var(--bg)}
+.chat-scroll::-webkit-scrollbar{width:5px}
+.chat-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+.msgs-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:0}
 
-.msg-row{display:flex;align-items:flex-end;gap:9px;animation:msgIn .2s ease}
+/* Message groups — Claude style with padding not bubbles */
+.msg-row{display:flex;gap:12px;padding:16px 0;animation:msgIn .2s ease}
 .msg-row.user{justify-content:flex-end}
-@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.bot-av{
-  width:32px;height:32px;border-radius:10px;flex-shrink:0;
-  background:linear-gradient(135deg,#f97316,#f59e0b);
-  display:flex;align-items:center;justify-content:center;font-size:16px;
-}
-.bubble{max-width:76%;padding:12px 16px;font-size:14px;line-height:1.7;word-break:break-word}
-.bubble.user{
-  background:linear-gradient(135deg,#f97316,#f59e0b);color:#fff;
-  border-radius:18px 18px 4px 18px;
-  box-shadow:0 3px 12px rgba(249,115,22,.3);
-}
-.bubble.bot{
-  background:#fff;color:#1c1917;border-radius:18px 18px 18px 4px;
-  border:1.5px solid #e7e5e4;box-shadow:0 2px 8px rgba(0,0,0,.07);
-}
-.bubble.bot code{font-family:monospace;font-size:12px;background:#fff7ed;padding:2px 5px;border-radius:4px;color:#c2410c}
-.bubble.bot strong{color:#1c1917}
+.msg-row.bot{justify-content:flex-start}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-.typing-row{display:flex;align-items:flex-end;gap:9px}
-.typing-bub{
-  display:flex;flex-direction:column;gap:8px;padding:13px 17px;
-  background:#fff;border:1.5px solid #e7e5e4;border-radius:18px 18px 18px 4px;
-  max-width:76%;box-shadow:0 2px 8px rgba(0,0,0,.07);
-}
-.typing-dots{display:flex;gap:5px;align-items:center}
-.typing-msg{
-  font-size:12.5px;color:#a8a29e;font-style:italic;
-  animation:fadeInMsg .4s ease;line-height:1.4;
-}
-@keyframes fadeInMsg{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.td{width:7px;height:7px;border-radius:50%;animation:tdb 1.1s infinite}
-.td:nth-child(1){background:#f97316;animation-delay:0ms}
-.td:nth-child(2){background:#f59e0b;animation-delay:160ms}
-.td:nth-child(3){background:#16a34a;animation-delay:320ms}
-@keyframes tdb{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-5px);opacity:1}}
-
-.chips-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
-.chip{
-  font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;
-  border:1.5px solid #fed7aa;background:#fff7ed;color:#c2410c;
-  cursor:pointer;font-family:inherit;transition:all .15s;
-}
-.chip:hover{background:#f97316;color:#fff;border-color:#f97316}
-
-.input-bar{
-  background:#fff;border-top:2px solid #fed7aa;padding:12px 16px;flex-shrink:0;
-  box-shadow:0 -2px 8px rgba(249,115,22,.08);
-}
-.input-row{max-width:700px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
-.chat-input{
-  flex:1;border:2px solid #d6d3d1;border-radius:12px;
-  padding:11px 14px;font-size:14px;resize:none;font-family:inherit;
-  max-height:120px;line-height:1.5;background:#fafaf9;color:#1c1917;outline:none;transition:border-color .15s;
-}
-.chat-input:focus{border-color:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,.12)}
-.chat-input::placeholder{color:#a8a29e}
-.send-btn{
-  width:42px;height:42px;border-radius:12px;border:none;
-  display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;
-}
-.send-btn.on{background:linear-gradient(135deg,#f97316,#f59e0b);color:#fff;box-shadow:0 3px 10px rgba(249,115,22,.35)}
-.send-btn.on:hover{transform:scale(1.06)}
-.send-btn.off{background:#e7e5e4;color:#a8a29e;cursor:not-allowed}
-.send-btn svg{width:16px;height:16px}
-
-.upload-strip{max-width:700px;margin:7px auto 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.upload-btn{
-  font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;
-  border:1.5px dashed #d6d3d1;background:transparent;color:#a8a29e;
-  cursor:pointer;font-family:inherit;transition:all .15s;
-}
-.upload-btn:hover{border-color:#f97316;color:#f97316}
-.upload-preview{
-  display:flex;align-items:center;gap:5px;background:#f0fdf4;
-  border:1px solid #bbf7d0;border-radius:999px;padding:4px 11px;
-  font-size:11px;font-weight:700;color:#16a34a;
-}
-.upload-preview button{background:none;border:none;cursor:pointer;color:#dc2626;font-size:13px}
-.input-note{font-size:10px;color:#a8a29e;text-align:center;margin-top:7px}
-
-/* Quiz */
-.quiz-card{
-  background:#fff;border:2px solid #fed7aa;border-radius:14px;padding:16px;max-width:82%;
-  box-shadow:0 3px 12px rgba(249,115,22,.1);
-}
-.quiz-card.answered{border-color:#d6d3d1;opacity:.82}
-.quiz-qnum{font-size:11px;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
-.quiz-qtext{font-size:14px;color:#1c1917;line-height:1.65;margin-bottom:12px;white-space:pre-wrap}
-.quiz-options{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
-.quiz-opt{
-  display:flex;align-items:center;gap:9px;padding:10px 13px;
-  border:2px solid #d6d3d1;border-radius:10px;background:#fafaf9;
-  cursor:pointer;font-size:13px;font-weight:600;color:#1c1917;
-  font-family:inherit;text-align:left;transition:all .15s;
-}
-.quiz-opt:hover:not(:disabled){border-color:#f97316;background:#fff7ed}
-.opt-letter{
-  width:24px;height:24px;border-radius:6px;background:#e7e5e4;
+/* Bot messages — no bubble, just clean text */
+.bot-av{width:32px;height:32px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--saffron),var(--gold));
   display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:800;color:#78716c;flex-shrink:0;
-}
-.quiz-opt.correct{border-color:#16a34a;background:#f0fdf4;color:#15803d}
-.quiz-opt.correct .opt-letter{background:#16a34a;color:#fff}
-.quiz-opt.wrong{border-color:#dc2626;background:#fef2f2;color:#b91c1c}
-.quiz-opt.wrong .opt-letter{background:#dc2626;color:#fff}
-.quiz-opt.reveal{border-color:#16a34a;background:#f0fdf4;color:#15803d}
-.quiz-opt:disabled{cursor:default}
-.quiz-write-wrap{display:flex;flex-direction:column;gap:7px}
-.quiz-write{
-  width:100%;border:2px solid #d6d3d1;border-radius:10px;
-  padding:10px 13px;font-size:13px;font-family:inherit;
-  resize:none;min-height:60px;background:#fafaf9;color:#1c1917;outline:none;transition:border-color .15s;
-}
-.quiz-write:focus{border-color:#f97316}
-.quiz-write:disabled{opacity:.5}
-.quiz-write::placeholder{color:#a8a29e}
-.quiz-submit{
-  align-self:flex-end;padding:8px 18px;border-radius:8px;border:none;
-  background:linear-gradient(135deg,#f97316,#f59e0b);color:#fff;
-  font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s;
-}
-.quiz-submit:hover{transform:scale(1.03)}
-.quiz-submit:disabled{background:#d6d3d1;color:#a8a29e;cursor:default;transform:none}
+  font-size:16px;box-shadow:0 2px 8px rgba(232,114,12,.2);margin-top:2px}
+.msg-content{flex:1;min-width:0;max-width:680px}
+.msg-sender{font-size:12px;font-weight:700;color:var(--ink3);margin-bottom:6px}
+.msg-text{font-size:14.5px;line-height:1.75;color:var(--ink)}
+.msg-text code{font-family:var(--mono);font-size:12.5px;background:#f0e8df;
+  padding:2px 6px;border-radius:4px;color:#c24a0c}
+.msg-text strong{color:var(--ink);font-weight:700}
+.msg-text pre{background:var(--ink2);border-radius:var(--r12);padding:14px 16px;
+  margin:10px 0;overflow-x:auto;font-family:var(--mono);font-size:12.5px;color:#e8ddd0;line-height:1.6}
+.msg-text hr{border:none;border-top:1px solid var(--border);margin:12px 0}
+.msg-actions{display:flex;gap:6px;margin-top:8px;opacity:0;transition:opacity var(--t)}
+.msg-row:hover .msg-actions{opacity:1}
+.msg-action-btn{padding:4px 8px;border-radius:var(--r8);border:1px solid var(--border);
+  background:var(--surface2);color:var(--muted);font-size:11px;font-weight:600;
+  cursor:pointer;font-family:var(--font);transition:all var(--t)}
+.msg-action-btn:hover{border-color:var(--saffron);color:var(--saffron)}
 
-/* Reference */
-.ref-scroll{flex:1;overflow-y:auto;padding:14px;background:#fff8f0}
-.ref-scroll::-webkit-scrollbar{width:4px}
-.ref-scroll::-webkit-scrollbar-thumb{background:#fed7aa;border-radius:10px}
-.ref-inner{max-width:700px;margin:0 auto}
-.ref-hint{background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#92400e;line-height:1.5}
+/* User messages — subtle right-aligned bubble */
+.user-msg-wrap{display:flex;flex-direction:column;align-items:flex-end;max-width:80%}
+.user-bubble{background:linear-gradient(135deg,var(--saffron),var(--gold));
+  color:#fff;border-radius:18px 18px 4px 18px;
+  padding:11px 16px;font-size:14px;line-height:1.6;
+  box-shadow:0 3px 12px rgba(232,114,12,.25)}
+
+/* Image results grid */
+.img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:8px;margin:12px 0}
+.img-card{border-radius:var(--r8);overflow:hidden;border:1.5px solid var(--border);
+  background:var(--surface2);cursor:pointer;transition:all var(--t)}
+.img-card:hover{border-color:var(--saffron);box-shadow:var(--shadow-sm)}
+.img-card img{width:100%;height:120px;object-fit:cover;display:block}
+.img-card-label{font-size:11px;color:var(--ink3);padding:5px 8px;font-weight:600;
+  background:var(--surface);border-top:1px solid var(--border)}
+
+/* Search indicator */
+.search-indicator{display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--muted);font-weight:600;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r999);padding:4px 12px;margin-bottom:10px}
+.search-dot{width:6px;height:6px;border-radius:50%;background:var(--saffron);
+  animation:tdb 1s infinite}
+
+/* Typing */
+.typing-row{display:flex;gap:12px;padding:14px 0}
+.typing-bub{flex:1;max-width:600px}
+.typing-inner{display:flex;flex-direction:column;gap:8px}
+.typing-dots{display:flex;gap:5px;align-items:center}
+.td{width:7px;height:7px;border-radius:50%;animation:tdb 1.1s infinite}
+.td:nth-child(1){background:var(--saffron);animation-delay:0ms}
+.td:nth-child(2){background:var(--gold);animation-delay:160ms}
+.td:nth-child(3){background:var(--green);animation-delay:320ms}
+@keyframes tdb{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-5px);opacity:1}}
+.typing-msg{font-size:13px;color:var(--muted);font-style:italic;
+  animation:fadeInMsg .3s ease}
+@keyframes fadeInMsg{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.chips-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.chip{font-size:12px;font-weight:600;padding:6px 13px;border-radius:var(--r999);
+  border:1.5px solid var(--border2);background:var(--surface);color:var(--ink3);
+  cursor:pointer;font-family:var(--font);transition:all var(--t)}
+.chip:hover{background:var(--saffron);color:#fff;border-color:var(--saffron)}
+
+/* ════════════════════════════════════════
+   INPUT BAR — Claude-like bottom input
+════════════════════════════════════════ */
+.input-area{
+  background:var(--bg);padding:12px 16px 16px;flex-shrink:0;
+  border-top:1px solid var(--border);
+}
+.input-box{
+  max-width:720px;margin:0 auto;
+  background:var(--surface);
+  border:1.5px solid var(--border2);
+  border-radius:var(--r16);
+  box-shadow:0 2px 12px rgba(0,0,0,.07);
+  transition:border-color var(--t),box-shadow var(--t);
+  overflow:hidden;
+}
+.input-box:focus-within{
+  border-color:var(--saffron);
+  box-shadow:0 2px 16px rgba(232,114,12,.15);
+}
+
+/* File preview strip inside input box */
+.file-preview-strip{
+  display:none;align-items:center;gap:8px;padding:8px 14px;
+  background:var(--saffron-l);border-bottom:1px solid #fed7aa;
+}
+.file-preview-strip.show{display:flex}
+.fp-icon{font-size:16px;flex-shrink:0}
+.fp-name{flex:1;font-size:12px;color:var(--ink3);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.fp-remove{background:none;border:none;cursor:pointer;color:var(--red);
+  font-size:16px;padding:0 4px;line-height:1;flex-shrink:0}
+
+/* Textarea */
+.chat-input{
+  width:100%;border:none;outline:none;resize:none;
+  padding:14px 16px 4px;font-size:14.5px;color:var(--ink);
+  font-family:var(--font);background:transparent;
+  max-height:200px;line-height:1.55;min-height:52px;
+}
+.chat-input::placeholder{color:var(--muted2)}
+
+/* Bottom toolbar inside input box */
+.input-toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px 10px;
+}
+.input-tools-left{display:flex;align-items:center;gap:4px}
+.input-tools-right{display:flex;align-items:center;gap:6px}
+.tool-btn{
+  width:34px;height:34px;border-radius:var(--r8);border:none;
+  background:transparent;color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;transition:all var(--t);font-family:var(--font);
+}
+.tool-btn:hover{background:var(--surface2);color:var(--saffron)}
+.tool-btn.active{background:var(--saffron-l);color:var(--saffron)}
+.tool-btn.listening{background:#fef2f2;color:var(--red);animation:pulse-rec 1s infinite}
+.tool-btn.speaking{background:var(--green-l);color:var(--green);animation:pulse-speak 1s infinite}
+@keyframes pulse-rec{0%,100%{box-shadow:0 0 0 0 rgba(196,32,32,.3)}50%{box-shadow:0 0 0 6px rgba(196,32,32,0)}}
+@keyframes pulse-speak{0%,100%{box-shadow:0 0 0 0 rgba(26,122,60,.3)}50%{box-shadow:0 0 0 6px rgba(26,122,60,0)}}
+
+.voice-status-text{font-size:11px;color:var(--saffron);font-weight:600;
+  padding:2px 8px;border-radius:var(--r999);background:var(--saffron-l)}
+
+.send-btn{
+  width:34px;height:34px;border-radius:var(--r8);border:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all var(--t);flex-shrink:0;
+}
+.send-btn.on{background:var(--saffron);color:#fff;box-shadow:0 2px 8px rgba(232,114,12,.35)}
+.send-btn.on:hover{background:var(--saffron-d);transform:scale(1.05)}
+.send-btn.off{background:var(--surface2);color:var(--muted2);cursor:not-allowed}
+
+.input-footer{max-width:720px;margin:6px auto 0;display:flex;align-items:center;justify-content:center}
+.input-note{font-size:11px;color:var(--muted2);text-align:center}
+.input-note span{font-weight:700;color:var(--saffron)}
+
+/* Voice status */
+#voiceStatus{max-width:720px;margin:0 auto 4px;
+  font-size:11.5px;color:var(--saffron);font-weight:600;text-align:center;min-height:16px}
+
+/* ════════════════════════════════════════
+   REFERENCE TAB
+════════════════════════════════════════ */
+.ref-scroll{flex:1;overflow-y:auto;padding:16px;background:var(--bg)}
+.ref-scroll::-webkit-scrollbar{width:5px}
+.ref-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+.ref-inner{max-width:720px;margin:0 auto}
+.ref-hint{background:var(--saffron-l);border:1px solid #fed7aa;border-radius:var(--r12);
+  padding:11px 14px;margin-bottom:12px;font-size:13px;color:#92400e;line-height:1.5}
 .ref-hint strong{color:#7c2d12}
 .ref-filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.ref-select{
-  width:100%;border:2px solid #d6d3d1;border-radius:8px;
-  padding:9px 34px 9px 12px;font-size:13px;color:#1c1917;
-  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;
-  font-family:inherit;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;transition:border-color .15s;
-}
-.ref-select:focus{border-color:#f97316}
-.ref-group{margin-bottom:12px}
-.ref-group-title{font-size:11px;font-weight:800;color:#a8a29e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;padding-left:3px}
-.ref-card{background:#fff;border:1.5px solid #e7e5e4;border-radius:12px;overflow:hidden;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.ref-card:hover{border-color:#fed7aa}
-.ref-card-head{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;user-select:none}
-.ref-card-head:hover{background:#fff7ed}
-.ref-card-title{font-size:13px;font-weight:800;color:#1c1917}
+.ref-select{width:100%;border:1.5px solid var(--border2);border-radius:var(--r8);
+  padding:8px 32px 8px 12px;font-size:13px;color:var(--ink);background:var(--surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239c8878' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;
+  font-family:var(--font);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;transition:border-color var(--t)}
+.ref-select:focus{border-color:var(--saffron)}
+.ref-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r12);
+  overflow:hidden;margin-bottom:8px;box-shadow:var(--shadow-sm);transition:border-color var(--t)}
+.ref-card:hover{border-color:var(--border2)}
+.ref-card-head{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;
+  gap:10px;cursor:pointer;user-select:none}
+.ref-card-head:hover{background:var(--surface2)}
+.ref-card-title{font-size:13px;font-weight:700;color:var(--ink)}
 .ref-meta{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px}
-.pill-red{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
-.pill-orange{background:#fff7ed;color:#ea580c;border:1px solid #fed7aa}
-.pill-violet{background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe}
-.pill-green{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
-.chev{font-size:12px;color:#a8a29e;transition:transform .2s}
+.pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:var(--r999)}
+.pill-red{background:var(--red-l);color:var(--red);border:1px solid #fecaca}
+.pill-orange{background:var(--saffron-l);color:var(--saffron-d);border:1px solid #fed7aa}
+.pill-violet{background:var(--violet-l);color:var(--violet);border:1px solid #ddd6fe}
+.pill-green{background:var(--green-l);color:var(--green);border:1px solid #bbf7d0}
+.chev{font-size:12px;color:var(--muted2);transition:transform .2s}
 .chev.open{transform:rotate(180deg)}
-.ref-card-body{display:none;padding:13px 15px;background:#fffbf7;border-top:1px solid #e7e5e4}
+.ref-card-body{display:none;padding:13px 15px;background:var(--surface2);border-top:1px solid var(--border)}
 .ref-card-body.open{display:block}
-.ref-body{font-size:13px;color:#44403c;line-height:1.85;white-space:pre-wrap;font-family:monospace}
-.ref-body strong{color:#1c1917;font-family:inherit}
-.hi{color:#f97316;font-weight:800}
-.ref-empty{text-align:center;padding:40px 20px;color:#a8a29e}
+.ref-body{font-size:13px;color:var(--ink2);line-height:1.85;white-space:pre-wrap;font-family:var(--mono)}
+.ref-body strong{color:var(--ink);font-family:var(--font)}
+.hi{color:var(--saffron);font-weight:700}
+.ref-empty{text-align:center;padding:40px 20px;color:var(--muted2)}
 
-/* Admin */
-#adminOverlay{
-  display:none;position:fixed;inset:0;z-index:100;
-  align-items:center;justify-content:center;padding:20px;
-  background:rgba(0,0,0,.5);
+/* Quiz cards */
+.quiz-card{background:var(--surface);border:1.5px solid #fed7aa;border-radius:var(--r12);
+  padding:16px;max-width:85%;box-shadow:var(--shadow-sm)}
+.quiz-card.answered{border-color:var(--border);opacity:.85}
+.quiz-qnum{font-size:11px;font-weight:700;color:var(--saffron);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.quiz-qtext{font-size:14px;color:var(--ink);line-height:1.65;margin-bottom:12px;white-space:pre-wrap}
+.quiz-options{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.quiz-opt{display:flex;align-items:center;gap:9px;padding:10px 13px;
+  border:1.5px solid var(--border2);border-radius:var(--r8);background:var(--surface2);
+  cursor:pointer;font-size:13px;font-weight:600;color:var(--ink);
+  font-family:var(--font);text-align:left;transition:all var(--t)}
+.quiz-opt:hover:not(:disabled){border-color:var(--saffron);background:var(--saffron-l)}
+.opt-letter{width:24px;height:24px;border-radius:6px;background:var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0}
+.quiz-opt.correct{border-color:var(--green);background:var(--green-l);color:var(--green)}
+.quiz-opt.correct .opt-letter{background:var(--green);color:#fff}
+.quiz-opt.wrong{border-color:var(--red);background:var(--red-l);color:var(--red)}
+.quiz-opt.wrong .opt-letter{background:var(--red);color:#fff}
+.quiz-opt.reveal{border-color:var(--green);background:var(--green-l);color:var(--green)}
+.quiz-opt:disabled{cursor:default}
+.quiz-write-wrap{display:flex;flex-direction:column;gap:7px}
+.quiz-write{width:100%;border:1.5px solid var(--border2);border-radius:var(--r8);
+  padding:10px 13px;font-size:13px;font-family:var(--font);resize:none;min-height:60px;
+  background:var(--surface2);color:var(--ink);outline:none;transition:border-color var(--t)}
+.quiz-write:focus{border-color:var(--saffron)}
+.quiz-write:disabled{opacity:.5}
+.quiz-write::placeholder{color:var(--muted2)}
+.quiz-submit{align-self:flex-end;padding:8px 18px;border-radius:var(--r8);border:none;
+  background:linear-gradient(135deg,var(--saffron),var(--gold));color:#fff;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all var(--t)}
+.quiz-submit:hover{transform:scale(1.03)}
+.quiz-submit:disabled{background:var(--border2);color:var(--muted);cursor:default;transform:none}
+
+/* Admin panel */
+#adminOverlay{display:none;position:fixed;inset:0;z-index:100;
+  align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.4);backdrop-filter:blur(8px)}
+.admin-card{background:var(--surface);border:1.5px solid #ddd6fe;border-radius:var(--r20);
+  padding:28px;width:100%;max-width:420px;box-shadow:var(--shadow-lg)}
+.admin-input{width:100%;border:1.5px solid var(--border2);border-radius:var(--r8);
+  padding:10px 13px;font-family:var(--mono);font-size:13px;color:var(--ink);
+  background:var(--surface2);outline:none;margin-bottom:8px}
+.admin-input:focus{border-color:var(--violet)}
+
+/* Mobile */
+@media(max-width:600px){
+  .wiz-card{padding:22px 16px}
+  .whead h2{font-size:19px}
+  .stepper{margin-bottom:16px}
+  .topbar{height:48px;padding:0 12px}
+  .tb-app-name{font-size:14px}
+  .user-name-display{max-width:60px}
+  .stab{padding:7px 10px;font-size:11.5px}
+  .ftab{padding:8px 12px;font-size:12px}
+  .chat-scroll{padding:16px 10px}
+  .msg-row{gap:9px;padding:12px 0}
+  .msg-text{font-size:14px}
+  .user-bubble{font-size:13.5px;padding:10px 14px}
+  .input-area{padding:10px 12px 14px}
+  .chat-input{font-size:14px;padding:12px 14px 4px}
+  .ref-filters{grid-template-columns:1fr 1fr;gap:7px}
+  .quiz-card{max-width:92%}
 }
-.admin-card{
-  background:#fff;border:2px solid #ddd6fe;border-radius:20px;
-  padding:28px;width:100%;max-width:420px;
-  box-shadow:0 20px 60px rgba(0,0,0,.2);
+@media(max-width:380px){
+  .stab span{display:none}
+  .user-name-display{display:none}
 }
-.admin-input{
-  width:100%;border:2px solid #d6d3d1;border-radius:8px;
-  padding:10px 13px;font-family:monospace;font-size:13px;
-  color:#1c1917;background:#fafaf9;outline:none;margin-bottom:8px;
-}
-.admin-input:focus{border-color:#7c3aed}
 </style>
 </head>
 <body>
 
-<!-- Floating subject symbols -->
-<div class="sym" style="font-size:40px;top:8%;left:5%;animation-duration:22s">△</div>
-<div class="sym" style="font-size:36px;top:65%;left:3%;animation-duration:28s;animation-delay:-7s">○</div>
-<div class="sym" style="font-size:28px;top:30%;right:4%;animation-duration:20s;animation-delay:-4s">a²+b²=c²</div>
-<div class="sym" style="font-size:42px;bottom:15%;right:6%;animation-duration:25s;animation-delay:-12s">ಕ</div>
-<div class="sym" style="font-size:38px;top:20%;right:28%;animation-duration:30s;animation-delay:-9s">न</div>
-<div class="sym" style="font-size:32px;bottom:25%;left:20%;animation-duration:24s;animation-delay:-5s">H₂O</div>
-<div class="sym" style="font-size:48px;top:45%;left:12%;animation-duration:26s;animation-delay:-15s;font-family:Georgia,serif">A</div>
-<div class="sym" style="font-size:28px;top:75%;right:22%;animation-duration:22s;animation-delay:-3s">1857</div>
-<div class="sym" style="font-size:36px;top:12%;left:45%;animation-duration:32s;animation-delay:-18s">∑ π</div>
-<div class="sym" style="font-size:38px;bottom:8%;left:55%;animation-duration:27s;animation-delay:-11s">ರ</div>
-<div class="sym" style="font-size:28px;top:55%;right:12%;animation-duration:23s;animation-delay:-6s">V=IR</div>
-<div class="sym" style="font-size:32px;top:38%;left:68%;animation-duration:29s;animation-delay:-20s">अ</div>
+<!-- Floating subject symbols background -->
+<div class="bg-canvas">
+  <svg class="shape" style="--d:22s;--dl:0s;width:80px;top:8%;left:6%" viewBox="0 0 100 100" fill="none"><polygon points="50,5 95,80 5,80" stroke="#e8720c" stroke-width="4" fill="rgba(232,114,12,.08)"/></svg>
+  <svg class="shape" style="--d:28s;--dl:-5s;width:65px;top:62%;left:3%" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="42" stroke="#2563eb" stroke-width="4" fill="rgba(37,99,235,.06)"/></svg>
+  <svg class="shape" style="--d:20s;--dl:-8s;width:55px;top:25%;right:5%" viewBox="0 0 100 100" fill="none"><rect x="10" y="10" width="80" height="80" stroke="#2563eb" stroke-width="4" fill="rgba(37,99,235,.06)" rx="4"/></svg>
+  <svg class="shape" style="--d:30s;--dl:-12s;width:70px;bottom:15%;right:7%" viewBox="0 0 100 100" fill="none"><polygon points="50,5 92,35 78,85 22,85 8,35" stroke="#6b2db8" stroke-width="4" fill="rgba(107,45,184,.06)"/></svg>
+  <svg class="shape" style="--d:18s;--dl:-3s;width:50px;top:45%;left:18%" viewBox="0 0 120 120" fill="none"><circle cx="60" cy="60" r="12" fill="#1a7a3c" opacity=".4"/><ellipse cx="60" cy="60" rx="48" ry="20" stroke="#1a7a3c" stroke-width="3" fill="none"/><ellipse cx="60" cy="60" rx="48" ry="20" stroke="#1a7a3c" stroke-width="3" fill="none" transform="rotate(60,60,60)"/><ellipse cx="60" cy="60" rx="48" ry="20" stroke="#1a7a3c" stroke-width="3" fill="none" transform="rotate(120,60,60)"/></svg>
+  <div class="sym" style="--d:25s;--dl:-6s;font-size:22px;top:12%;left:22%;--r0:-5deg;--r1:3deg;--r2:-4deg;color:#1a5cb8">a²+b²=c²</div>
+  <div class="sym" style="--d:28s;--dl:-14s;font-size:38px;top:50%;left:8%;--r0:3deg;--r1:-4deg;--r2:5deg;color:#166534">ಕ</div>
+  <div class="sym" style="--d:22s;--dl:-9s;font-size:32px;top:72%;left:15%;--r0:-2deg;--r1:5deg;--r2:-3deg;color:#166534">ನ</div>
+  <div class="sym" style="--d:30s;--dl:-19s;font-size:30px;top:8%;right:28%;--r0:4deg;--r1:-5deg;--r2:3deg;color:#0891b2">अ</div>
+  <div class="sym" style="--d:24s;--dl:-11s;font-size:20px;top:35%;right:14%;--r0:-3deg;--r1:4deg;--r2:-5deg;color:#1a7a3c">H₂O · V=IR</div>
+  <div class="sym" style="--d:20s;--dl:-4s;font-size:20px;bottom:22%;left:50%;--r0:2deg;--r1:-4deg;--r2:5deg;color:#c42020">1857 · 1947</div>
+  <div class="sym" style="--d:26s;--dl:-16s;font-size:44px;top:40%;right:38%;--r0:-4deg;--r1:6deg;--r2:-3deg;color:#d4900a;font-family:Georgia,serif">A</div>
+  <div class="sym" style="--d:19s;--dl:-7s;font-size:22px;top:18%;right:42%;--r0:3deg;--r1:-3deg;--r2:4deg;color:#6b2db8">∑ π ∫</div>
+</div>
 
-<!-- WIZARD -->
+<!-- ═══════════════════ WIZARD ═══════════════════ -->
 <div id="wizard">
 
-  <!-- STEP 2 — entry point -->
-  <div class="w-step active" id="step2">
-    <div class="card">
+  <div class="w-step" id="step1">
+    <div class="wiz-card">
       <div class="stepper">
+        <div class="snode"><div class="sdot active">1</div><div class="slabel active">API Key</div></div>
+        <div class="sline"></div>
+        <div class="snode"><div class="sdot">2</div><div class="slabel">Name</div></div>
+        <div class="sline"></div>
+        <div class="snode"><div class="sdot">3</div><div class="slabel">Subject</div></div>
+      </div>
+      <div class="whead"><h2>🔑 Welcome to Vidya</h2><p>Your AI tutor for Karnataka SSLC 2025-26</p></div>
+      <div class="field">
+        <label>Gemini API Key <a href="https://aistudio.google.com/apikey" target="_blank">Get free →</a></label>
+        <div class="iw">
+          <input type="password" id="apiKeyInput" placeholder="AIzaSy…" autocomplete="off" oninput="validateS1()" onkeyup="validateS1()"/>
+          <button class="peye" onclick="togglePw()">👁</button>
+        </div>
+        <div class="fnote">🔒 Stays in your browser only</div>
+      </div>
+      <div class="icard"><span>📅</span><p>Trained on <strong>DSERT LBA PDFs 2025-26</strong> + <strong>KSEAB Blueprint</strong>. Exam 1: <strong>March 18, 2026</strong>!</p></div>
+      <button class="btn" id="s1btn" onclick="goToStep(2)">Continue →</button>
+    </div>
+  </div>
+
+  <div class="w-step active" id="step2">
+    <div class="wiz-card">
+      <div class="stepper">
+        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">API Key</div></div>
+        <div class="sline done"></div>
         <div class="snode"><div class="sdot active">1</div><div class="slabel active">Your Name</div></div>
         <div class="sline"></div>
         <div class="snode"><div class="sdot">2</div><div class="slabel">Subject</div></div>
       </div>
-      <div class="chead">
+      <div class="whead">
         <h2>👋 Welcome to Vidya!</h2>
-        <p>Your AI tutor for Karnataka SSLC Class 10 · 2025-26<br>What's your name?</p>
+        <p>Your AI tutor for Karnataka SSLC Class 10 · 2025-26</p>
         <div class="badges">
           <span class="badge bo">🇮🇳 Karnataka Board</span>
-          <span class="badge bg">DSERT 2025-26</span>
+          <span class="badge bg2">DSERT 2025-26</span>
           <span class="badge bb">KSEAB Blueprint</span>
         </div>
       </div>
@@ -548,18 +577,16 @@ input::placeholder{color:#a8a29e}
     </div>
   </div>
 
-  <!-- STEP 3 -->
   <div class="w-step" id="step3">
-    <div class="card" style="max-width:500px;width:100%">
+    <div class="wiz-card" style="max-width:500px;width:100%">
       <div class="stepper">
-        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">Your Name</div></div>
+        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">API Key</div></div>
+        <div class="sline done"></div>
+        <div class="snode"><div class="sdot done">✓</div><div class="slabel done">Name</div></div>
         <div class="sline done"></div>
         <div class="snode"><div class="sdot active">2</div><div class="slabel active">Subject</div></div>
       </div>
-      <div class="chead">
-        <h2>📚 Choose your session</h2>
-        <p>Class 10 SSLC · 2025-26 · Tap to select</p>
-      </div>
+      <div class="whead"><h2>📚 Choose your session</h2><p>Class 10 SSLC · 2025-26</p></div>
       <div class="field">
         <label>Subject</label>
         <div class="spills" id="subjPills">
@@ -576,9 +603,9 @@ input::placeholder{color:#a8a29e}
       <div class="field">
         <label>Learning Mode</label>
         <div class="modes">
-          <button class="mpill active" data-m="tutor" onclick="pickMode('tutor')"><div class="mt">📚 Tutor Me</div><div class="md">Explain concepts</div></button>
+          <button class="mpill active" data-m="tutor" onclick="pickMode('tutor')"><div class="mt">📚 Tutor Me</div><div class="md">Explain step-by-step</div></button>
           <button class="mpill" data-m="quiz" onclick="pickMode('quiz')"><div class="mt">🧠 Quiz Me</div><div class="md">Test yourself</div></button>
-          <button class="mpill" data-m="homework" onclick="pickMode('homework')"><div class="mt">✏️ Homework</div><div class="md">Step-by-step</div></button>
+          <button class="mpill" data-m="homework" onclick="pickMode('homework')"><div class="mt">✏️ Homework</div><div class="md">Solve together</div></button>
           <button class="mpill" data-m="summary" onclick="pickMode('summary')"><div class="mt">📋 Summary</div><div class="md">Quick notes</div></button>
           <button class="mpill sslc" data-m="sslc" onclick="pickMode('sslc')"><div class="mt">🎯 SSLC Exam Prep 2026</div><div class="md">Blueprint mock tests · March 18 · A+ strategy</div></button>
         </div>
@@ -587,68 +614,111 @@ input::placeholder{color:#a8a29e}
       <button class="btn-ghost" onclick="goToStep(2)">← Back</button>
     </div>
   </div>
-
 </div>
 
-<!-- APP -->
+<!-- ═══════════════════ APP ═══════════════════ -->
 <div id="app">
+
+  <!-- Topbar -->
   <div class="topbar">
-    <div class="tb-brand">
+    <div class="tb-left">
       <div class="tb-logo">🎓</div>
-      <div>
-        <div class="tb-name" id="tbName">Vidya</div>
-        <div class="tb-sub" id="tbSub">Class 10 · SSLC 2025-26</div>
+      <span class="tb-app-name">Vidya</span>
+    </div>
+    <div class="tb-mid">
+      <div class="tb-sub" id="tbSub" style="font-size:12px;color:var(--muted);font-weight:500"></div>
+    </div>
+    <div class="tb-right">
+      <span id="reqBadge" class="req-badge"></span>
+      <div class="user-chip" onclick="goToStep(3)" title="Settings">
+        <div class="user-av" id="userAvatar">?</div>
+        <span class="user-name-display" id="tbName">Student</span>
       </div>
-    </div>
-    <div class="tb-actions">
-      <span id="reqBadge" style="font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;white-space:nowrap;display:none"></span>
-      <button class="tbbtn" id="speakToggleBtn" onclick="toggleAutoSpeak()" title="Toggle AI voice">🔊</button>
-      <button class="tbbtn" onclick="goToStep(3)">⚙️</button>
-      <button class="tbbtn danger" onclick="exitApp()">✕</button>
+      <button class="tbbtn danger" onclick="exitApp()" title="Exit">✕</button>
     </div>
   </div>
+
+  <!-- Subject tabs -->
   <div class="subj-strip" id="subjTabbar">
-    <button class="stab" data-s="All Subjects" onclick="switchSubjectTab('All Subjects')">🌟 All</button>
-    <button class="stab" data-s="Mathematics" onclick="switchSubjectTab('Mathematics')">🔢 Maths</button>
-    <button class="stab" data-s="Science" onclick="switchSubjectTab('Science')">🔬 Science</button>
-    <button class="stab" data-s="Social Science" onclick="switchSubjectTab('Social Science')">🌍 Social</button>
-    <button class="stab" data-s="English" onclick="switchSubjectTab('English')">📖 English</button>
-    <button class="stab" data-s="Hindi" onclick="switchSubjectTab('Hindi')">🇮🇳 Hindi</button>
-    <button class="stab" data-s="Kannada" onclick="switchSubjectTab('Kannada')">🌿 Kannada</button>
-    <button class="stab" data-s="Sanskrit" onclick="switchSubjectTab('Sanskrit')">🕉️ Sanskrit</button>
+    <button class="stab" data-s="All Subjects" onclick="switchSubjectTab('All Subjects')">🌟 <span>All</span></button>
+    <button class="stab" data-s="Mathematics" onclick="switchSubjectTab('Mathematics')">🔢 <span>Maths</span></button>
+    <button class="stab" data-s="Science" onclick="switchSubjectTab('Science')">🔬 <span>Science</span></button>
+    <button class="stab" data-s="Social Science" onclick="switchSubjectTab('Social Science')">🌍 <span>Social</span></button>
+    <button class="stab" data-s="English" onclick="switchSubjectTab('English')">📖 <span>English</span></button>
+    <button class="stab" data-s="Hindi" onclick="switchSubjectTab('Hindi')">🇮🇳 <span>Hindi</span></button>
+    <button class="stab" data-s="Kannada" onclick="switchSubjectTab('Kannada')">🌿 <span>Kannada</span></button>
+    <button class="stab" data-s="Sanskrit" onclick="switchSubjectTab('Sanskrit')">🕉️ <span>Sanskrit</span></button>
   </div>
+
+  <!-- Feature tabs -->
   <div class="feat-tabs">
     <button class="ftab active" id="tab-chat" onclick="switchTab('chat')">💬 Chat</button>
     <button class="ftab" id="tab-ref" onclick="switchTab('ref')">📐 Formulas &amp; Notes</button>
   </div>
+
+  <!-- Chat panel -->
   <div class="tab-panel active" id="panel-chat">
     <div class="chat-scroll" id="chatMessages">
       <div class="msgs-inner" id="msgsInner"></div>
     </div>
-    <div class="input-bar">
-      <div class="input-row">
-        <button class="voice-btn" id="micBtn" onclick="toggleVoiceInput()" title="Speak your question">🎤</button>
-        <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask anything or tap 🎤 to speak…" oninput="resizeTA(this);updateSend()" onkeydown="onKey(event)"></textarea>
-        <button class="send-btn off" id="sendBtn" onclick="sendMsg()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
-        </button>
-      </div>
-      <div class="voice-status" id="voiceStatus"></div>
-      <div class="upload-strip">
-        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">📎 Upload Question Paper / Blueprint</button>
-        <input type="file" id="fileInput" accept="image/*,.pdf" style="display:none" onchange="handleUpload(event)"/>
-        <div class="upload-preview" id="uploadPreview" style="display:none">
-          <span id="uploadName"></span>
-          <button onclick="clearUpload()">✕</button>
+
+    <div id="voiceStatus"></div>
+
+    <!-- Input area — Claude-like -->
+    <div class="input-area">
+      <div class="input-box" id="inputBox">
+        <!-- File preview inside box -->
+        <div class="file-preview-strip" id="uploadPreview">
+          <span class="fp-icon">📎</span>
+          <span class="fp-name" id="uploadName"></span>
+          <button class="fp-remove" onclick="clearUpload()">✕</button>
+        </div>
+        <!-- Textarea -->
+        <textarea class="chat-input" id="chatInput" rows="1"
+          placeholder="Ask Vidya anything about SSLC 2025-26…"
+          oninput="resizeTA(this);updateSend()"
+          onkeydown="onKey(event)"></textarea>
+        <!-- Toolbar row -->
+        <div class="input-toolbar">
+          <div class="input-tools-left">
+            <!-- Upload -->
+            <button class="tool-btn" onclick="document.getElementById('fileInput').click()" title="Attach file">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <input type="file" id="fileInput" accept="image/*,.pdf" style="display:none" onchange="handleUpload(event)"/>
+            <!-- Web search toggle -->
+            <button class="tool-btn active" id="webSearchBtn" onclick="toggleWebSearch()" title="Web search">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+          </div>
+          <div class="input-tools-right">
+            <span id="voiceStatusInline" style="display:none" class="voice-status-text"></span>
+            <!-- Mic -->
+            <button class="tool-btn" id="micBtn" onclick="toggleVoiceInput()" title="Speak your question">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+            <!-- AI Speak -->
+            <button class="tool-btn" id="speakToggleBtn" onclick="toggleAutoSpeak()" title="Toggle AI voice">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </button>
+            <!-- Send -->
+            <button class="send-btn off" id="sendBtn" onclick="sendMsg()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+            </button>
+          </div>
         </div>
       </div>
-      <div class="input-note">⚡ Gemini 2.5 Flash · DSERT SSLC 2025-26 · <span id="reqCount"></span></div>
+      <div class="input-footer">
+        <div class="input-note">⚡ Gemini 2.5 Flash · DSERT SSLC 2025-26 · <span id="reqCount"></span></div>
+      </div>
     </div>
   </div>
+
+  <!-- Reference panel -->
   <div class="tab-panel" id="panel-ref">
     <div class="ref-scroll">
       <div class="ref-inner">
-        <div class="ref-hint"><strong>📎 Have a question paper?</strong> Go to 💬 Chat → tap Upload → attach image or PDF → ask Vidya!</div>
+        <div class="ref-hint"><strong>📎 Have a question paper?</strong> Go to 💬 Chat → attach via 📎 → ask Vidya to analyse!</div>
         <div class="ref-filters">
           <select class="ref-select" id="refSubj" onchange="renderRef()">
             <option value="">All Subjects</option>
@@ -674,29 +744,30 @@ input::placeholder{color:#a8a29e}
   </div>
 </div>
 
-<!-- ADMIN -->
+<!-- Admin overlay -->
 <div id="adminOverlay">
   <div class="admin-card">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
-      <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#f97316);display:flex;align-items:center;justify-content:center;font-size:20px">🔐</div>
-      <div><div style="font-size:17px;font-weight:800;color:#1c1917">Admin Panel</div><div style="font-size:12px;color:#a8a29e">Vidya — SSLC Tutor</div></div>
+      <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#6b2db8,#e8720c);display:flex;align-items:center;justify-content:center;font-size:20px">🔐</div>
+      <div><div style="font-size:17px;font-weight:800;color:var(--ink)">Admin Panel</div><div style="font-size:12px;color:var(--muted)">Vidya — SSLC Tutor</div></div>
     </div>
-    <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:13px;margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:#a8a29e;text-transform:uppercase;margin-bottom:5px">Current Key</div>
-      <div style="font-family:monospace;font-size:13px;color:#7c3aed" id="adm-key">—</div>
-      <div style="font-size:12px;color:#a8a29e;margin-top:4px">Status: <span id="adm-status" style="color:#16a34a">—</span></div>
+    <div style="background:var(--violet-l);border:1px solid #ddd6fe;border-radius:10px;padding:13px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Current Key (masked)</div>
+      <div style="font-family:var(--mono);font-size:13px;color:var(--violet)" id="adm-key">—</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Status: <span id="adm-status" style="color:var(--green)">—</span></div>
     </div>
     <div style="margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:#a8a29e;text-transform:uppercase;margin-bottom:7px">Update API Key</div>
-      <input class="admin-input" id="adm-new-a" type="text" placeholder="First half…"/>
-      <input class="admin-input" id="adm-new-b" type="text" placeholder="Second half…"/>
-      <button onclick="adminSaveKey()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">💾 Save (this session)</button>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:7px">Update API Key (split in half)</div>
+      <input class="admin-input" id="adm-new-a" type="text" placeholder="First half of new key…"/>
+      <input class="admin-input" id="adm-new-b" type="text" placeholder="Second half of new key…"/>
+      <button onclick="adminSaveKey()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#6b2db8,#a78bfa);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">💾 Save (this session)</button>
     </div>
-    <button onclick="adminClose()" style="width:100%;padding:11px;border-radius:10px;border:2px solid #d6d3d1;background:transparent;color:#78716c;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">← Back to App</button>
+    <button onclick="adminClose()" style="width:100%;padding:11px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--ink3);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)">← Back to App</button>
   </div>
 </div>
 
 <script>
+
 
 
 
@@ -809,10 +880,8 @@ function toggleAutoSpeak(){
   AUTO_SPEAK = !AUTO_SPEAK;
   const btn = document.getElementById('speakToggleBtn');
   if(btn){
-    btn.textContent = AUTO_SPEAK ? '🔊' : '🔇';
-    btn.style.background = AUTO_SPEAK ? '#f0fdf4' : '';
-    btn.style.borderColor = AUTO_SPEAK ? '#bbf7d0' : '';
-    btn.style.color = AUTO_SPEAK ? '#16a34a' : '';
+    if(AUTO_SPEAK){ btn.classList.add('active'); btn.title='AI voice ON — click to turn off'; }
+    else { btn.classList.remove('active'); btn.title='Toggle AI voice'; }
   }
   if(!AUTO_SPEAK) stopSpeaking();
 }
@@ -1313,7 +1382,43 @@ async function sendMsg(retryMsg){
     const d=await resp.json();
     const reply=d.candidates?.[0]?.content?.parts?.[0]?.text||"Hmm, I couldn't get a response. Try again!";
     history.push({role:'model',parts:[{text:reply}]});
+    // Check if user asked for diagram — fetch images
+    if(isDiagramRequest(txt || _lastUserMsg || '')){
+      fetchDiagramImages((txt || _lastUserMsg || '') + ' ' + SUBJECT).then(imgs=>{
+        if(imgs.length){
+          const imgRow = document.createElement('div');
+          imgRow.className = 'msg-row bot';
+          imgRow.innerHTML = '<div class="bot-av">🖼️</div><div class="msg-content"><div class="msg-sender">Diagram Search</div>' + renderImageGrid(imgs) + '</div>';
+          document.getElementById('msgsInner').appendChild(imgRow);
+          scrollChat();
+        }
+      });
+    }
+    // Check if user asked for videos — fetch YouTube results
+    if(isVideoRequest(txt || _lastUserMsg || '')){
+      const videoQuery = (txt || _lastUserMsg || '') + ' ' + SUBJECT;
+      fetchYouTubeVideos(videoQuery).then(vids=>{
+        const vidRow = document.createElement('div');
+        vidRow.className = 'msg-row bot';
+        vidRow.innerHTML = '<div class="bot-av">📺</div><div class="msg-content"><div class="msg-sender">Video Search</div>' + renderVideoGrid(vids, videoQuery) + '</div>';
+        document.getElementById('msgsInner').appendChild(vidRow);
+        scrollChat();
+      });
+    }
     addBubble('bot',reply);
+    // If AI response mentions videos/YouTube, proactively show search
+    if(reply.toLowerCase().includes('video') || reply.toLowerCase().includes('youtube')){
+      if(!isVideoRequest(txt || _lastUserMsg || '')){
+        const vq = (txt || _lastUserMsg || '') + ' ' + SUBJECT;
+        fetchYouTubeVideos(vq).then(vids=>{
+          const vr = document.createElement('div');
+          vr.className = 'msg-row bot';
+          vr.innerHTML = '<div class="bot-av">📺</div><div class="msg-content"><div class="msg-sender">Video Search</div>' + renderVideoGrid(vids, vq) + '</div>';
+          document.getElementById('msgsInner').appendChild(vr);
+          scrollChat();
+        });
+      }
+    }
     incrementUsage();
     // Show remaining count every 5 requests
     const rem = getRemainingRequests();
@@ -1475,7 +1580,7 @@ SCOPE: Karnataka DSERT/KTBS Class 10 SSLC 2025-26 ONLY.
 ${allSubjNote}
 ${quizInstructions}
 
-NOTE FOR STUDENTS: For additional practice questions, the YouTube channel @Udaan_Deepak has excellent SSLC 2025-26 preparation playlists. Recommend it when students need more practice.
+NOTE FOR STUDENTS: For additional practice questions, the YouTube channel @the video search feature finds relevant YouTube videos automatically. Recommend students need more practice.
 
 ════════════════════════════════════════════
 VERIFIED OFFICIAL BLUEPRINTS (from KSEAB 2025-26 PDFs)
@@ -1749,6 +1854,7 @@ PERSONALITY:
 
 CURRENT SUBJECT: ${SUBJECT}
 CURRENT MODE: ${MODE}
+${getWebSearchNote()}
 `;
 }
 
@@ -1838,24 +1944,48 @@ function addBubble(role, text){
   const inner = document.getElementById('msgsInner');
 
   if(role === 'bot' && MODE === 'quiz'){
-    // Try to parse quiz question cards from the text
     const rendered = renderQuizMessage(text, inner);
     if(rendered) { scrollChat(); return; }
   }
 
   const row = document.createElement('div');
   row.className = 'msg-row ' + role;
-  const html = formatMsg(text, role);
-  if(role === 'bot')
-    row.innerHTML = '<div class="bot-av">🤖</div><div class="bubble bot">' + html + '</div>';
-  else
-    row.innerHTML = '<div class="bubble user">' + escHtml(text) + '</div>';
+
+  if(role === 'bot'){
+    const html = formatMsg(text, 'bot');
+    row.innerHTML =
+      '<div class="bot-av">🤖</div>' +
+      '<div class="msg-content">' +
+        '<div class="msg-sender">Vidya</div>' +
+        '<div class="msg-text">' + html + '</div>' +
+        '<div class="msg-actions">' +
+          '<button class="msg-action-btn" onclick="copyMsg(this)">📋 Copy</button>' +
+          '<button class="msg-action-btn" onclick="speakFromBtn(this)">🔊 Speak</button>' +
+        '</div>' +
+      '</div>';
+  } else {
+    row.innerHTML =
+      '<div class="user-msg-wrap">' +
+        '<div class="user-bubble">' + escHtml(text) + '</div>' +
+      '</div>';
+  }
   inner.appendChild(row);
   scrollChat();
-  // Auto-speak bot responses (only if user has enabled it)
   if(role==='bot' && AUTO_SPEAK && typeof speakText === 'function'){
     speakText(text);
   }
+}
+
+function copyMsg(btn){
+  const txt = btn.closest('.msg-content').querySelector('.msg-text').innerText;
+  navigator.clipboard.writeText(txt).catch(()=>{});
+  btn.textContent = '✅ Copied';
+  setTimeout(()=>{ btn.textContent = '📋 Copy'; }, 1500);
+}
+
+function speakFromBtn(btn){
+  const txt = btn.closest('.msg-content').querySelector('.msg-text').innerText;
+  speakText(txt);
 }
 
 // Renders quiz question cards inline — returns true if any cards were rendered
@@ -1908,7 +2038,7 @@ function renderQuizMessage(text, inner){
          + '</div>';
     }
     c += '</div>';
-    row.innerHTML = '<div class="bot-av">🤖</div>' + c;
+    row.innerHTML = '<div class="bot-av">🤖</div><div class="msg-content"><div class="msg-sender">Vidya — Quiz</div>' + c + '</div>';
     inner.appendChild(row);
   });
 
@@ -2092,7 +2222,7 @@ function showTyping(){
   const msgs = THINKING_MSGS[SUBJECT] || THINKING_MSGS.default;
   const startMsg = msgs[Math.floor(Math.random()*msgs.length)];
 
-  row.innerHTML = `<div class="bot-av">🤖</div><div class="typing-bub"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div><div class="typing-msg" id="tmsg_${id}">${startMsg}</div></div>`;
+  row.innerHTML = `<div class="bot-av">🤖</div><div class="typing-bub"><div class="typing-inner"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div><div class="typing-msg" id="tmsg_${id}">${startMsg}</div></div></div>`;
   inner.appendChild(row);
   scrollChat();
 
@@ -2833,8 +2963,8 @@ function initVoice(){
   recognition.onstart = () => {
     isListening = true;
     const btn = document.getElementById('micBtn');
-    btn.className = 'voice-btn listening';
-    btn.textContent = '⏹';
+    btn.classList.add('listening');
+    btn.title = 'Stop listening';
     setVoiceStatus('🔴 Listening… speak now');
   };
 
@@ -2885,12 +3015,14 @@ function toggleVoiceInput(){
 function resetMicBtn(){
   isListening = false;
   const btn = document.getElementById('micBtn');
-  if(btn){ btn.className = 'voice-btn'; btn.textContent = '🎤'; }
+  if(btn){ btn.classList.remove('listening'); btn.title = 'Speak your question'; }
 }
 
 function setVoiceStatus(msg){
   const el = document.getElementById('voiceStatus');
   if(el) el.textContent = msg;
+  const eli = document.getElementById('voiceStatusInline');
+  if(eli){ eli.textContent = msg; eli.style.display = msg ? 'inline-flex' : 'none'; }
 }
 
 // ── AI SPEAK (Text to Speech) ─────────────────────────────────────
@@ -2912,14 +3044,23 @@ function speakText(text){
 
   const utterance = new SpeechSynthesisUtterance(clean);
   utterance.lang = 'en-IN';
-  utterance.rate = 0.95;
-  utterance.pitch = 1.0;
+  utterance.rate = 0.92;
+  utterance.pitch = 1.1;
   utterance.volume = 1.0;
 
-  // Pick a good voice if available
+  // Prefer Indian lady voice
   const voices = speechSynthesis.getVoices();
-  const preferred = voices.find(v => v.lang.includes('en-IN') || v.lang.includes('en-GB') || v.name.includes('Google'));
-  if(preferred) utterance.voice = preferred;
+  const indiaLady = voices.find(v =>
+    (v.lang.includes('en-IN') || v.lang.includes('hi-IN') || v.lang.includes('kn-IN')) &&
+    (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('woman') ||
+     v.name.toLowerCase().includes('priya') || v.name.toLowerCase().includes('lekha') ||
+     v.name.toLowerCase().includes('raveena') || v.name.toLowerCase().includes('aditi') ||
+     v.name.toLowerCase().includes('neerja') || v.name.toLowerCase().includes('heera'))
+  ) ||
+  voices.find(v => v.lang.includes('en-IN')) ||
+  voices.find(v => v.lang.includes('en-GB') && v.name.toLowerCase().includes('female')) ||
+  voices.find(v => v.name.includes('Google') && v.lang.includes('en'));
+  if(indiaLady) utterance.voice = indiaLady;
 
   utterance.onstart = () => {
     isSpeaking = true;
@@ -2943,6 +3084,170 @@ function stopSpeaking(){
   setVoiceStatus('');
 }
 
+
+// ── WEB SEARCH TOGGLE ────────────────────────────────────────────
+let WEB_SEARCH_ON = true;
+
+// ── YOUTUBE VIDEO SEARCH ─────────────────────────────────────────
+// Uses YouTube's oembed + search suggestion API (no API key needed)
+function isVideoRequest(txt){
+  const lower = txt.toLowerCase();
+  return lower.includes('video') || lower.includes('youtube') ||
+         lower.includes('watch') || lower.includes('explain with video') ||
+         lower.includes('show video') || lower.includes('visual') ||
+         lower.includes('lecture') || lower.includes('tutorial');
+}
+
+async function fetchYouTubeVideos(query){
+  // Use YouTube search via a CORS-friendly proxy approach
+  // We'll use the YouTube search suggestions + construct search URLs
+  const searchTerms = [
+    query + ' Karnataka SSLC Class 10',
+    query + ' SSLC 2025',
+    query + ' Class 10 explained'
+  ];
+  
+  // Build direct YouTube search links (no API key needed)
+  const videos = searchTerms.map((term, i) => ({
+    title: term,
+    searchUrl: 'https://www.youtube.com/results?search_query=' + encodeURIComponent(term),
+    thumbnail: null,
+    isSearch: true
+  }));
+
+  // Also try to get actual video embeds via YouTube no-cookie
+  try {
+    const q = encodeURIComponent(query + ' SSLC Karnataka Class 10 2025');
+    // Use Invidious public API (open source YouTube frontend, no key needed)
+    const apis = [
+      `https://inv.nadeko.net/api/v1/search?q=${q}&type=video&page=1`,
+      `https://invidious.fdn.fr/api/v1/search?q=${q}&type=video&page=1`,
+    ];
+    
+    for(const api of apis){
+      try{
+        const resp = await fetch(api, {signal: AbortSignal.timeout(4000)});
+        if(!resp.ok) continue;
+        const data = await resp.json();
+        if(data && data.length){
+          return data.slice(0,4).map(v => ({
+            title: v.title,
+            videoId: v.videoId,
+            author: v.author,
+            thumbnail: `https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg`,
+            url: `https://www.youtube.com/watch?v=${v.videoId}`,
+            isSearch: false
+          }));
+        }
+      }catch(e){ continue; }
+    }
+  }catch(e){}
+
+  // Fallback: return search links
+  return videos;
+}
+
+function renderVideoGrid(videos, query){
+  if(!videos.length) return '';
+  
+  const searchUrl = 'https://www.youtube.com/results?search_query=' + 
+    encodeURIComponent(query + ' SSLC Karnataka Class 10');
+  
+  let html = '<div style="margin:12px 0">';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">📺 Relevant Videos</div>';
+  
+  if(videos[0].isSearch){
+    // Show search links
+    html += '<div style="display:flex;flex-direction:column;gap:7px">';
+    const terms = [
+      query + ' Karnataka SSLC Class 10',
+      query + ' SSLC 2025 explained',
+      query + ' Class 10 Karnataka Board'
+    ];
+    terms.forEach(term => {
+      const url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(term);
+      html += `<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1.5px solid var(--border);border-radius:10px;text-decoration:none;transition:all .15s;color:var(--ink)" onmouseover="this.style.borderColor='#ff0000'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:18px">▶️</span>
+        <span style="font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(term)}</span>
+        <span style="font-size:11px;color:var(--muted);flex-shrink:0">Search on YouTube →</span>
+      </a>`;
+    });
+    html += '</div>';
+  } else {
+    // Show actual video thumbnails
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">';
+    videos.forEach(v => {
+      html += `<a href="${v.url}" target="_blank" style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:#fff;text-decoration:none;display:block;transition:all .15s" onmouseover="this.style.borderColor='#ff0000'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="position:relative">
+          <img src="${v.thumbnail}" alt="${escHtml(v.title)}" style="width:100%;height:100px;object-fit:cover;display:block" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"/>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+            <div style="width:36px;height:36px;background:rgba(0,0,0,.7);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px">▶</div>
+          </div>
+        </div>
+        <div style="padding:7px 9px">
+          <div style="font-size:12px;font-weight:600;color:var(--ink);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${escHtml(v.title)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">${escHtml(v.author||'YouTube')}</div>
+        </div>
+      </a>`;
+    });
+    html += '</div>';
+  }
+  
+  html += `<a href="${searchUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:12px;color:#ff0000;font-weight:600;text-decoration:none">🔴 More videos on YouTube →</a>`;
+  html += '</div>';
+  return html;
+}
+
+function toggleWebSearch(){
+  WEB_SEARCH_ON = !WEB_SEARCH_ON;
+  const btn = document.getElementById('webSearchBtn');
+  if(btn){
+    if(WEB_SEARCH_ON){ btn.classList.add('active'); btn.title = 'Web search ON'; }
+    else { btn.classList.remove('active'); btn.title = 'Web search OFF'; }
+  }
+}
+
+// ── IMAGE / DIAGRAM SEARCH ──────────────────────────────────────
+// Check if message asks for a diagram or image
+function isDiagramRequest(txt){
+  const lower = txt.toLowerCase();
+  return lower.includes('diagram') || lower.includes('draw') ||
+         lower.includes('show me') || lower.includes('image of') ||
+         lower.includes('picture of') || lower.includes('structure of') ||
+         lower.includes('label') || lower.includes('figure');
+}
+
+// Search Wikimedia/educational images for diagrams
+async function fetchDiagramImages(query){
+  const searchQ = encodeURIComponent(query + ' diagram labeled biology chemistry physics');
+  const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${searchQ}&gsrlimit=4&prop=pageimages&piprop=thumbnail&pithumbsize=300&format=json&origin=*`;
+  try{
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const pages = Object.values(data?.query?.pages || {});
+    return pages.filter(p=>p.thumbnail).map(p=>({
+      title: p.title,
+      src: p.thumbnail.source,
+      url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(p.title)
+    }));
+  } catch(e){ return []; }
+}
+
+function renderImageGrid(images){
+  if(!images.length) return '';
+  return '<div class="img-grid">' + images.map(img=>
+    `<a class="img-card" href="${img.url}" target="_blank">` +
+    `<img src="${img.src}" alt="${escHtml(img.title)}" loading="lazy" onerror="this.parentElement.style.display='none'"/>` +
+    `<div class="img-card-label">${escHtml(img.title)}</div></a>`
+  ).join('') + '</div>';
+}
+
+// Add web search instruction to system prompt if enabled
+function getWebSearchNote(){
+  if(!WEB_SEARCH_ON) return '';
+  return `\n\nWEB SEARCH: You have been given web search capability. When answering, if recent facts, current events, or information beyond your training would help, mention that you are searching and incorporate relevant up-to-date information. For Karnataka SSLC, always prioritize DSERT/KSEAB official content.`;
+}
+
 // ── ADMIN SHORTCUT: CapsLock + Shift + / ─────────────────────────
 document.addEventListener('keydown', function(e){
   // Detect: key is '/' (or '?'), Shift is held, CapsLock is active
@@ -2957,6 +3262,7 @@ document.addEventListener('keydown', function(e){
     }
   }
 });
+
 
 
 

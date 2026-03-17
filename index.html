@@ -632,6 +632,7 @@ input::placeholder{color:var(--muted2)}
     </div>
     <div class="tb-right">
       <span id="reqBadge" class="req-badge"></span>
+      <button class="tbbtn" onclick="toggleCanvas()" title="AI Diagram Board">🎨</button>
       <div class="user-chip" onclick="goToStep(3)" title="Settings">
         <div class="user-av" id="userAvatar">?</div>
         <span class="user-name-display" id="tbName">Student</span>
@@ -772,7 +773,6 @@ input::placeholder{color:var(--muted2)}
 
 
 
-
 /* ══════════════════════════════════════════
    STATE
 ══════════════════════════════════════════ */
@@ -785,6 +785,7 @@ const KEYS = [
   ['AIzaSyCqlwgeb','S4E7xdmd8e-xr','GV5_rqSE0YfRk'],
   ['AIzaSyDd1L8u7','ex_hkXribhBCB','yb76JbWFBxIpc'],
 ].map(k=>k[0]+k[1]+k[2]);
+const CURRENT_MODEL='gemini-2.5-flash';
 
 let _keyIndex = 0;
 function getNextKey(){
@@ -796,20 +797,7 @@ function getCurrentKey(){ return KEYS[_keyIndex]; }
 
 let GEM_KEY=getCurrentKey(), STU_NAME='', SUBJECT='', MODE='tutor';
 
-function saveSession(){
-  try{ localStorage.setItem('vidya_session',JSON.stringify({name:STU_NAME,subject:SUBJECT,mode:MODE,ts:Date.now()})); }catch(e){}
-}
-function loadSession(){
-  try{
-    const s=JSON.parse(localStorage.getItem('vidya_session')||'{}');
-    if(!s.name||(Date.now()-s.ts)>86400000) return false;
-    STU_NAME=s.name; SUBJECT=s.subject||'All Subjects'; MODE=s.mode||'tutor'; _pickedSubject=SUBJECT;
-    return true;
-  }catch(e){return false;}
-}
-
 // ── MODEL & RATE LIMITING ─────────────────────────────────────────
-const CURRENT_MODEL = 'gemini-2.5-flash'; // switch to 'gemini-2.5-flash' to enable per-user limit
 const USER_DAILY_LIMIT = 20;
 
 // Browser fingerprint — harder to bypass than name-based
@@ -837,35 +825,42 @@ function getFingerprint(){
   return _fingerprint;
 }
 
-function getRateLimitKey(){
-  const d = new Date().toISOString().slice(0,10);
-  return 'vidya_req_' + getFingerprint() + '_' + d;
-}
-function getUserRequestCount(){
-  try{ return parseInt(localStorage.getItem(getRateLimitKey())||'0'); }
-  catch(e){ return 0; }
-}
-function incrementUserRequestCount(){
-  try{
-    const k = getRateLimitKey();
-    const c = getUserRequestCount() + 1;
-    localStorage.setItem(k, c);
-    return c;
-  }catch(e){ return 0; }
-}
-function isGeminiModel(){ return CURRENT_MODEL.includes('gemini'); }
-function getRemainingRequests(){ return Math.max(0, USER_DAILY_LIMIT - getUserRequestCount()); }
 
+// ── BROWSER FINGERPRINT RATE LIMITING ───────────────────────
+function getFingerprint(){
+  if(_fingerprint) return _fingerprint;
+  const p=[navigator.language,navigator.platform,screen.width+'x'+screen.height,
+           screen.colorDepth,new Date().getTimezoneOffset(),navigator.hardwareConcurrency||''].join('|');
+  let h=0; for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;}
+  return _fingerprint='fp_'+Math.abs(h).toString(36);
+}
+function getRateLimitKey(){return 'vidya_req_'+getFingerprint()+'_'+new Date().toISOString().slice(0,10);}
+function getUserRequestCount(){try{return parseInt(localStorage.getItem(getRateLimitKey())||'0');}catch(e){return 0;}}
+function incrementUserRequestCount(){try{const k=getRateLimitKey(),c=getUserRequestCount()+1;localStorage.setItem(k,c);return c;}catch(e){return 0;}}
+function getRemainingRequests(){return Math.max(0,USER_DAILY_LIMIT-getUserRequestCount());}
+function isGeminiModel(){return CURRENT_MODEL.includes('gemini');}
+function updateRequestBadge(){
+  const el=document.getElementById('reqBadge');
+  const rc=document.getElementById('reqCount');
+  const rem=getRemainingRequests();
+  if(el&&isGeminiModel()){
+    el.style.display='inline-block';
+    el.textContent=rem+'/'+USER_DAILY_LIMIT+' left today';
+    el.style.background=rem<=5?'#fef2f2':rem<=10?'#fffbeb':'#f0fdf4';
+    el.style.color=rem<=5?'#dc2626':rem<=10?'#d97706':'#1a7a3c';
+    el.style.borderColor=rem<=5?'#fecaca':rem<=10?'#fde68a':'#bbf7d0';
+  }
+  if(rc) rc.textContent=rem>0?rem+' questions left today':'No questions left today';
+}
 function checkRateLimit(){
   if(!isGeminiModel()) return true;
-  const count = getUserRequestCount();
-  if(count >= USER_DAILY_LIMIT){
-    addBubble('bot', '⏰ You have used all ' + USER_DAILY_LIMIT + ' free questions for today!\n\nCome back tomorrow for more 😊 Your learning streak continues! 📚');
-    updateRequestBadge();
+  if(getUserRequestCount()>=USER_DAILY_LIMIT){
+    addBubble('bot','⏰ You have used all '+USER_DAILY_LIMIT+' free questions for today! Come back tomorrow 😊 See you, '+STU_NAME+'! 📚');
     return false;
   }
   return true;
 }
+
 
 function updateRequestBadge(){
   const el = document.getElementById('reqBadge');
@@ -887,16 +882,11 @@ function incrementUsage(){ localStorage.setItem(getUsageKey(), getUsageCount()+1
 function isLimitReached(){ return getUsageCount() >= DAILY_LIMIT; }
 function getRemainingRequests(){ return Math.max(0, DAILY_LIMIT - getUsageCount()); }
 // ─────────────────────────────────────────────────────────────────
-let ADMIN_MODE=false;
-let AUTO_SPEAK = false; // off by default — user can toggle with 🔊 button
 
 function toggleAutoSpeak(){
   AUTO_SPEAK = !AUTO_SPEAK;
-  const btn = document.getElementById('speakToggleBtn');
-  if(btn){
-    if(AUTO_SPEAK){ btn.classList.add('active'); btn.title='AI voice ON — click to turn off'; }
-    else { btn.classList.remove('active'); btn.title='Toggle AI voice'; }
-  }
+  const btn=document.getElementById('speakToggleBtn');
+  if(btn) AUTO_SPEAK?btn.classList.add('active'):btn.classList.remove('active');
   if(!AUTO_SPEAK) stopSpeaking();
 }
 let _adminKeySeq=false; // tracks Caps+Shift+/ shortcut state
@@ -989,7 +979,7 @@ function validateS3(){
 function switchSubjectTab(s){
   SUBJECT = s;
   // Update tab highlight
-  document.querySelectorAll('.stab').forEach(b=>b.classList.toggle('active',b.dataset.s===s));
+  document.querySelectorAll('.stab').forEach(b=>b.classList.toggle('sel',b.dataset.s===s));
   // Update topbar sub
   const subjEmoji = {Mathematics:'🔢',Science:'🔬','Social Science':'🌍',English:'📖',Hindi:'🇮🇳',Kannada:'🌿',Sanskrit:'🕉️','All Subjects':'🌟'}[s]||'📚';
   document.getElementById('tbSub').textContent = `Class 10 SSLC · ${subjEmoji} ${s} · ${MODE}`;
@@ -1113,6 +1103,7 @@ function launchApp(){
 
 function switchSubject(){ goToStep(3); }
 function exitApp(){
+  try{localStorage.removeItem('vidya_session');}catch(e){}
   document.getElementById('wizard').style.display='flex';
   document.getElementById('app').style.display='none';
   document.getElementById('app').classList.remove('active');
@@ -1329,7 +1320,6 @@ function updateSend(){
   }
 }
 
-let _lastUserMsg = null; // stores last message for quota retry
 
 async function sendMsg(retryMsg){
   const ta=document.getElementById('chatInput');
@@ -1388,10 +1378,10 @@ async function sendMsg(retryMsg){
   const tid=showTyping();
 
   try{
-    _abortController=new AbortController();
+    _abortCtrl=new AbortController();
   const resp=await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent?key=${GEM_KEY}`,
-      {method:'POST',headers:{'Content-Type':'application/json'},signal:_abortController.signal,
+      {method:'POST',headers:{'Content-Type':'application/json'},signal:_abortCtrl.signal,
        body:JSON.stringify({
          system_instruction:{parts:[{text:sysPrompt()}]},
          contents:history,
@@ -1407,19 +1397,11 @@ async function sendMsg(retryMsg){
     const d=await resp.json();
     const reply=d.candidates?.[0]?.content?.parts?.[0]?.text||"Hmm, I couldn't get a response. Try again!";
     history.push({role:'model',parts:[{text:reply}]});
-    // Check if user asked for diagram — fetch images
-    if(isDiagramRequest(txt || _lastUserMsg || '')){
-      fetchDiagramImages((txt || _lastUserMsg || '') + ' ' + SUBJECT).then(imgs=>{
-        if(imgs.length){
-          const imgRow = document.createElement('div');
-          imgRow.className = 'msg-row bot';
-          imgRow.innerHTML = '<div class="bot-av">🖼️</div><div class="msg-content"><div class="msg-sender">Diagram Search</div>' + renderImageGrid(imgs) + '</div>';
-          document.getElementById('msgsInner').appendChild(imgRow);
-          scrollChat();
-        }
-      });
-    }
     addBubble('bot',reply);
+    if(isDiagramRequest(txt||_lastUserMsg||'')){
+      showDiagramLinks((txt||_lastUserMsg||'')+' '+SUBJECT);
+    }
+    saveSession();
     incrementUsage();
     // Show remaining count every 5 requests
     const rem = getRemainingRequests();
@@ -1430,26 +1412,20 @@ async function sendMsg(retryMsg){
     hideTyping(tid);
     const msg = err.message || '';
     // Only pop history if NOT retrying (quota rotation retries)
-    const isQuotaErr = msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429');
-    if(!isQuotaErr) history.pop();
+    const isQuotaErr=msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('429');
+    if(!isQuotaErr&&!isAbort) history.pop();
     let friendly = '';
     if(msg.includes('API_KEY_INVALID') || msg.includes('invalid') || msg.includes('API key'))
       friendly = "🔑 There's a problem with the app's API key. Please let your teacher know!";
     else if(msg.includes('leaked') || msg.includes('reported'))
       friendly = "🔑 The app's API key needs to be updated. Please inform your teacher!";
-    else if(msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429')){
-      // Auto-rotate to next key and retry silently
-      if(KEYS.length > 1){
-        GEM_KEY = getNextKey();
-        loading = false;
-        // Retry silently with saved message
-        if(_lastUserMsg){
-          setTimeout(() => sendMsg(_lastUserMsg), 800);
-        }
+    else if(msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('429')){
+      if(KEYS.length>1){
+        GEM_KEY=getNextKey();
+        loading=false;
+        if(_lastUserMsg) setTimeout(()=>sendMsg(_lastUserMsg),800);
         return;
-      } else {
-        friendly = "⏳ Too many requests right now! Please wait a minute and try again 😊";
-      }
+      } else { friendly="⏳ Too many requests! Wait a minute and try again 😊"; }
     }
     else if(msg.includes('SAFETY') || msg.includes('safety'))
       friendly = "🛡️ That question was blocked by the safety filter. Try rephrasing it!";
@@ -1855,7 +1831,7 @@ PERSONALITY:
 
 CURRENT SUBJECT: ${SUBJECT}
 CURRENT MODE: ${MODE}
-${getWebSearchNote()}
+${typeof getWebSearchNote==='function'?getWebSearchNote():''}
 `;
 }
 
@@ -1945,48 +1921,24 @@ function addBubble(role, text){
   const inner = document.getElementById('msgsInner');
 
   if(role === 'bot' && MODE === 'quiz'){
+    // Try to parse quiz question cards from the text
     const rendered = renderQuizMessage(text, inner);
     if(rendered) { scrollChat(); return; }
   }
 
   const row = document.createElement('div');
   row.className = 'msg-row ' + role;
-
-  if(role === 'bot'){
-    const html = formatMsg(text, 'bot');
-    row.innerHTML =
-      '<div class="bot-av">🤖</div>' +
-      '<div class="msg-content">' +
-        '<div class="msg-sender">Vidya</div>' +
-        '<div class="msg-text">' + html + '</div>' +
-        '<div class="msg-actions">' +
-          '<button class="msg-action-btn" onclick="copyMsg(this)">📋 Copy</button>' +
-          '<button class="msg-action-btn" onclick="speakFromBtn(this)">🔊 Speak</button>' +
-        '</div>' +
-      '</div>';
-  } else {
-    row.innerHTML =
-      '<div class="user-msg-wrap">' +
-        '<div class="user-bubble">' + escHtml(text) + '</div>' +
-      '</div>';
-  }
+  const html = formatMsg(text, role);
+  if(role === 'bot')
+    row.innerHTML = '<div class="bot-av">🤖</div><div class="bubble bot">' + html + '</div>';
+  else
+    row.innerHTML = '<div class="bubble user">' + escHtml(text) + '</div>';
   inner.appendChild(row);
   scrollChat();
+  // Auto-speak bot responses (only if user has enabled it)
   if(role==='bot' && AUTO_SPEAK && typeof speakText === 'function'){
     speakText(text);
   }
-}
-
-function copyMsg(btn){
-  const txt = btn.closest('.msg-content').querySelector('.msg-text').innerText;
-  navigator.clipboard.writeText(txt).catch(()=>{});
-  btn.textContent = '✅ Copied';
-  setTimeout(()=>{ btn.textContent = '📋 Copy'; }, 1500);
-}
-
-function speakFromBtn(btn){
-  const txt = btn.closest('.msg-content').querySelector('.msg-text').innerText;
-  speakText(txt);
 }
 
 // Renders quiz question cards inline — returns true if any cards were rendered
@@ -2223,7 +2175,7 @@ function showTyping(){
   const msgs = THINKING_MSGS[SUBJECT] || THINKING_MSGS.default;
   const startMsg = msgs[Math.floor(Math.random()*msgs.length)];
 
-  row.innerHTML = `<div class="bot-av">🤖</div><div class="typing-bub"><div class="typing-inner"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div><div class="typing-msg" id="tmsg_${id}">${startMsg}</div></div></div>`;
+  row.innerHTML = `<div class="bot-av">🤖</div><div class="typing-bub"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div><div class="typing-msg" id="tmsg_${id}">${startMsg}</div></div>`;
   inner.appendChild(row);
   scrollChat();
 
@@ -2937,31 +2889,6 @@ function formatRefBody(text){
 }
 
 // Init ref on page load with all items visible
-
-// ── INSTANT DIAGRAM SEARCH LINKS ─────────────────────────────
-function isDiagramRequest(txt){
-  const l=txt.toLowerCase();
-  return l.includes('diagram')||l.includes('draw')||l.includes('show me')||
-         l.includes('image of')||l.includes('picture')||l.includes('structure of')||
-         l.includes('label')||l.includes('figure');
-}
-function renderDiagramLinks(query){
-  const q=query.replace(/diagram|draw|show me|image of|picture|label|figure|of the|of a/gi,'').trim();
-  const enc=encodeURIComponent(q+' labeled diagram');
-  return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">'
-    +'<a href="https://www.google.com/search?tbm=isch&q='+enc+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:999px;background:#eff6ff;border:1.5px solid #bfdbfe;color:#1d4ed8;font-size:13px;font-weight:600;text-decoration:none">🔍 Google Images</a>'
-    +'<a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(q.replace(/ /g,'_'))+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:999px;background:#f0fdf4;border:1.5px solid #bbf7d0;color:#15803d;font-size:13px;font-weight:600;text-decoration:none">📖 Wikipedia</a>'
-    +'<a href="https://commons.wikimedia.org/w/index.php?search='+enc+'&ns6=1" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:999px;background:#fff7ed;border:1.5px solid #fed7aa;color:#c2410c;font-size:13px;font-weight:600;text-decoration:none">🖼️ Wikimedia</a>'
-    +'</div>';
-}
-function showDiagramLinks(query){
-  const inner=document.getElementById('msgsInner');
-  if(!inner) return;
-  const row=document.createElement('div');
-  row.className='msg-row bot';
-  row.innerHTML='<div class="bot-av">🖼️</div><div class="msg-content"><div class="msg-sender" style="color:var(--muted);font-size:12px">Find diagrams →</div>'+renderDiagramLinks(query)+'</div>';
-  inner.appendChild(row); scrollChat();
-}
 window.addEventListener('DOMContentLoaded',()=>{ 
   renderRef(); 
   validateS1(); 
@@ -2990,7 +2917,6 @@ function initVoice(){
     isListening = true;
     const btn = document.getElementById('micBtn');
     btn.classList.add('listening');
-    btn.title = 'Stop listening';
     setVoiceStatus('🔴 Listening… speak now');
   };
 
@@ -3041,14 +2967,14 @@ function toggleVoiceInput(){
 function resetMicBtn(){
   isListening = false;
   const btn = document.getElementById('micBtn');
-  if(btn){ btn.classList.remove('listening'); btn.title = 'Speak your question'; }
+  if(btn) btn.classList.remove('listening');
 }
 
 function setVoiceStatus(msg){
-  const el = document.getElementById('voiceStatus');
-  if(el) el.textContent = msg;
-  const eli = document.getElementById('voiceStatusInline');
-  if(eli){ eli.textContent = msg; eli.style.display = msg ? 'inline-flex' : 'none'; }
+  const el=document.getElementById('voiceStatus');
+  if(el) el.textContent=msg;
+  const eli=document.getElementById('voiceStatusInline');
+  if(eli){eli.textContent=msg;eli.style.display=msg?'inline-flex':'none';}
 }
 
 // ── AI SPEAK (Text to Speech) ─────────────────────────────────────
@@ -3070,23 +2996,17 @@ function speakText(text){
 
   const utterance = new SpeechSynthesisUtterance(clean);
   utterance.lang = 'en-IN';
-  utterance.rate = 0.92;
-  utterance.pitch = 1.1;
+  utterance.rate = 0.95;
+  utterance.pitch = 1.0;
   utterance.volume = 1.0;
 
-  // Prefer Indian lady voice
-  const voices = speechSynthesis.getVoices();
-  const indiaLady = voices.find(v =>
-    (v.lang.includes('en-IN') || v.lang.includes('hi-IN') || v.lang.includes('kn-IN')) &&
-    (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('woman') ||
-     v.name.toLowerCase().includes('priya') || v.name.toLowerCase().includes('lekha') ||
-     v.name.toLowerCase().includes('raveena') || v.name.toLowerCase().includes('aditi') ||
-     v.name.toLowerCase().includes('neerja') || v.name.toLowerCase().includes('heera'))
-  ) ||
-  voices.find(v => v.lang.includes('en-IN')) ||
-  voices.find(v => v.lang.includes('en-GB') && v.name.toLowerCase().includes('female')) ||
-  voices.find(v => v.name.includes('Google') && v.lang.includes('en'));
-  if(indiaLady) utterance.voice = indiaLady;
+  // Pick a good voice if available
+  const spkVoices=speechSynthesis.getVoices();
+  const indiaV=spkVoices.find(v=>/priya|aditi|lekha|raveena|neerja|heera/i.test(v.name)&&/en-IN|hi-IN/i.test(v.lang))
+    ||spkVoices.find(v=>/en-IN/i.test(v.lang))
+    ||spkVoices.find(v=>/en-GB/i.test(v.lang))
+    ||spkVoices.find(v=>/google/i.test(v.name));
+  if(indiaV) utterance.voice=indiaV;
 
   utterance.onstart = () => {
     isSpeaking = true;
@@ -3111,59 +3031,100 @@ function stopSpeaking(){
 }
 
 
-// ── WEB SEARCH TOGGLE ────────────────────────────────────────────
-let WEB_SEARCH_ON = true;
-
-function toggleWebSearch(){
-  WEB_SEARCH_ON = !WEB_SEARCH_ON;
-  const btn = document.getElementById('webSearchBtn');
-  if(btn){
-    if(WEB_SEARCH_ON){ btn.classList.add('active'); btn.title = 'Web search ON'; }
-    else { btn.classList.remove('active'); btn.title = 'Web search OFF'; }
-  }
+// ── SESSION PERSISTENCE ──────────────────────────────────────
+function saveSession(){
+  try{localStorage.setItem('vidya_session',JSON.stringify({name:STU_NAME,subject:SUBJECT,mode:MODE,ts:Date.now()}));}catch(e){}
 }
-
-// ── IMAGE / DIAGRAM SEARCH ──────────────────────────────────────
-// Check if message asks for a diagram or image
-function isDiagramRequest(txt){
-  const lower = txt.toLowerCase();
-  return lower.includes('diagram') || lower.includes('draw') ||
-         lower.includes('show me') || lower.includes('image of') ||
-         lower.includes('picture of') || lower.includes('structure of') ||
-         lower.includes('label') || lower.includes('figure');
-}
-
-// Search Wikimedia/educational images for diagrams
-async function fetchDiagramImages(query){
-  const searchQ = encodeURIComponent(query + ' diagram labeled biology chemistry physics');
-  const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${searchQ}&gsrlimit=4&prop=pageimages&piprop=thumbnail&pithumbsize=300&format=json&origin=*`;
+function loadSession(){
   try{
-    const resp = await fetch(url);
-    const data = await resp.json();
-    const pages = Object.values(data?.query?.pages || {});
-    return pages.filter(p=>p.thumbnail).map(p=>({
-      title: p.title,
-      src: p.thumbnail.source,
-      url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(p.title)
-    }));
-  } catch(e){ return []; }
+    const s=JSON.parse(localStorage.getItem('vidya_session')||'{}');
+    if(!s.name||(Date.now()-s.ts)>86400000) return false;
+    STU_NAME=s.name; SUBJECT=s.subject||'All Subjects'; MODE=s.mode||'tutor'; _pickedSubject=SUBJECT;
+    return true;
+  }catch(e){return false;}
 }
 
-function renderImageGrid(images){
-  if(!images.length) return '';
-  return '<div class="img-grid">' + images.map(img=>
-    `<a class="img-card" href="${img.url}" target="_blank">` +
-    `<img src="${img.src}" alt="${escHtml(img.title)}" loading="lazy" onerror="this.parentElement.style.display='none'"/>` +
-    `<div class="img-card-label">${escHtml(img.title)}</div></a>`
-  ).join('') + '</div>';
+// ── STOP GENERATION ─────────────────────────────────────────
+function stopGeneration(){
+  if(_abortCtrl){try{_abortCtrl.abort();}catch(e){}_abortCtrl=null;}
+  loading=false; updateSend();
 }
 
-// Add web search instruction to system prompt if enabled
+// ── WEB SEARCH & DIAGRAM ────────────────────────────────────
+function toggleWebSearch(){
+  WEB_SEARCH_ON=!WEB_SEARCH_ON;
+  const b=document.getElementById('webSearchBtn');
+  if(b) WEB_SEARCH_ON?b.classList.add('active'):b.classList.remove('active');
+}
 function getWebSearchNote(){
-  if(!WEB_SEARCH_ON) return '';
-  return `\n\nWEB SEARCH: You have been given web search capability. When answering, if recent facts, current events, or information beyond your training would help, mention that you are searching and incorporate relevant up-to-date information. For Karnataka SSLC, always prioritize DSERT/KSEAB official content.`;
+  return WEB_SEARCH_ON?'\n\nWEB SEARCH ON: You may reference up-to-date facts. Always prioritise official DSERT/KSEAB 2025-26 content.':'';
+}
+function isDiagramRequest(txt){
+  const l=txt.toLowerCase();
+  return l.includes('diagram')||l.includes('draw')||l.includes('show me')||
+         l.includes('sketch')||l.includes('figure of')||l.includes('structure of')||l.includes('label');
+}
+function showDiagramLinks(query){
+  const q=query.replace(/diagram|draw|show me|sketch|figure of|structure of|label|of the|of a|please/gi,'').trim();
+  const enc=encodeURIComponent(q+' labeled diagram');
+  const html='<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">'
+    +'<a href="https://www.google.com/search?tbm=isch&q='+enc+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:999px;background:#eff6ff;border:1.5px solid #bfdbfe;color:#1d4ed8;font-size:13px;font-weight:600;text-decoration:none">🔍 Google Images</a>'
+    +'<a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(q.replace(/ /g,'_'))+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:999px;background:#f0fdf4;border:1.5px solid #bbf7d0;color:#15803d;font-size:13px;font-weight:600;text-decoration:none">📖 Wikipedia</a>'
+    +'<a href="https://commons.wikimedia.org/w/index.php?search='+enc+'&ns6=1" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:999px;background:#fff7ed;border:1.5px solid #fed7aa;color:#c2410c;font-size:13px;font-weight:600;text-decoration:none">🖼️ Wikimedia</a>'
+    
+    +'</div>';
+  const inner=document.getElementById('msgsInner');
+  if(!inner) return;
+  const row=document.createElement('div');
+  row.className='msg-row bot';
+  row.innerHTML='<div class="bot-av">🖼️</div><div class="msg-content"><div class="msg-sender" style="font-size:12px;color:#9c8878">Find diagrams</div>'+html+'</div>';
+  inner.appendChild(row); scrollChat();
 }
 
+// ── AI DIAGRAM CANVAS ────────────────────────────────────────
+let canvasOpen=false;
+function toggleCanvas(){
+  canvasOpen=!canvasOpen;
+  const p=document.getElementById('diagramCanvas');
+  if(p) p.style.display=canvasOpen?'flex':'none';
+}
+function closeCanvas(){
+  canvasOpen=false;
+  const p=document.getElementById('diagramCanvas');
+  if(p) p.style.display='none';
+}
+function askNewDiagram(){
+  const q=prompt('What diagram do you want to draw? (e.g. nephron, reflex arc, heart)');
+  if(q&&q.trim()) generateDiagram(q.trim());
+}
+async function generateDiagram(query){
+  const p=document.getElementById('diagramCanvas');
+  const out=document.getElementById('diagramOutput');
+  if(!out) return;
+  if(!canvasOpen) toggleCanvas();
+  out.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:12px;color:#9c8878"><div style="font-size:32px">🎨</div><div style="font-size:13px;font-weight:600">Drawing '+escHtml(query)+'...</div><div style="display:flex;gap:5px"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>';
+  const prompt_text='Draw a detailed labeled diagram of "'+query+'" for Karnataka Class 10 SSLC. Use ASCII art and Unicode box-drawing characters (─│┌┐└┘├┤┬┴┼→←↑↓). Label ALL important parts clearly with arrows. Make it educational, neat, and exam-ready. Put the diagram in a code block. Then list all labeled parts with brief descriptions.';
+  try{
+    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+CURRENT_MODEL+':generateContent?key='+GEM_KEY,
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({
+         system_instruction:{parts:[{text:'You are an expert at creating clear ASCII/Unicode educational diagrams for Indian school students.'}]},
+         contents:[{role:'user',parts:[{text:prompt_text}]}],
+         generationConfig:{temperature:0.3,maxOutputTokens:1500}
+       })
+      });
+    const data=await resp.json();
+    const diagram=data.candidates?.[0]?.content?.parts?.[0]?.text||'Could not generate diagram. Try again!';
+    out.innerHTML='<div style="padding:14px">'
+      +'<div style="font-size:13px;font-weight:700;color:#1a1207;margin-bottom:8px">📐 '+escHtml(query)+'</div>'
+      +'<div style="font-size:13px;line-height:1.7;color:#3d2e1a;white-space:pre-wrap;font-family:monospace">'+formatMsg(diagram,'bot')+'</div>'
+      +'<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'
+        +'<button onclick="navigator.clipboard.writeText(document.getElementById(\'diagramOutput\').innerText)" style="padding:7px 14px;border-radius:999px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>'
+        +'<button onclick="askNewDiagram()" style="padding:7px 14px;border-radius:999px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎨 New Diagram</button>'
+      +'</div>'
+      +'</div>';
+  }catch(e){out.innerHTML='<div style="padding:16px;color:#c42020;font-size:13px">❌ Could not generate diagram. Try again!</div>';}
+}
 // ── ADMIN SHORTCUT: CapsLock + Shift + / ─────────────────────────
 document.addEventListener('keydown', function(e){
   // Detect: key is '/' (or '?'), Shift is held, CapsLock is active
@@ -3181,7 +3142,37 @@ document.addEventListener('keydown', function(e){
 
 
 
-
 </script>
+
+<!-- AI DIAGRAM CANVAS — right side panel -->
+<div id="diagramCanvas" style="display:none;position:fixed;top:0;right:0;width:380px;height:100%;z-index:50;flex-direction:column;background:#ffffff;border-left:1.5px solid #e8ddd0;box-shadow:-4px 0 20px rgba(0,0,0,.1)">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e8ddd0;flex-shrink:0;background:#fff">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#6b2db8,#e8720c);display:flex;align-items:center;justify-content:center;font-size:14px">🎨</div>
+      <span style="font-size:14px;font-weight:700;color:#1a1207">AI Diagram Board</span>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button onclick="askNewDiagram()" style="padding:5px 10px;border-radius:8px;border:1px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✏️ New</button>
+      <button onclick="closeCanvas()" style="padding:5px 10px;border-radius:8px;border:1px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✕</button>
+    </div>
+  </div>
+  <div id="diagramOutput" style="flex:1;overflow-y:auto;padding:0">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:12px;color:#9c8878;padding:20px;text-align:center">
+      <div style="font-size:48px">🎨</div>
+      <div style="font-size:14px;font-weight:700;color:#1a1207">AI Diagram Board</div>
+      <div style="font-size:13px;color:#9c8878;line-height:1.6">Ask Vidya to draw any diagram<br>and it appears here instantly!</div>
+      <div style="display:flex;flex-direction:column;gap:7px;width:100%;margin-top:8px">
+        <button onclick="generateDiagram('nephron structure')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🔬 Nephron</button>
+        <button onclick="generateDiagram('reflex arc nervous system')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🧠 Reflex Arc</button>
+        <button onclick="generateDiagram('human heart chambers valves')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">❤️ Human Heart</button>
+        <button onclick="generateDiagram('plant cell organelles labeled')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🌱 Plant Cell</button>
+        <button onclick="generateDiagram('series parallel electric circuit')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⚡ Electric Circuit</button>
+        <button onclick="generateDiagram('water cycle evaporation precipitation')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">💧 Water Cycle</button>
+        <button onclick="generateDiagram('triangle BPT similarity theorem')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📐 Triangle / BPT</button>
+        <button onclick="generateDiagram('India physical map rivers mountains')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🗺️ India Map</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

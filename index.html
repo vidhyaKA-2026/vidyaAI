@@ -1410,10 +1410,11 @@ async function sendMsg(retryMsg){
     }
   }catch(err){
     hideTyping(tid);
-    const msg = err.message || '';
-    // Only pop history if NOT retrying (quota rotation retries)
+    const msg = err.message||'';
+    const isAbort = err.name==='AbortError'||msg.toLowerCase().includes('abort');
+    if(isAbort){loading=false;updateSend();return;}
     const isQuotaErr=msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('429');
-    if(!isQuotaErr&&!isAbort) history.pop();
+    if(!isQuotaErr) history.pop();
     let friendly = '';
     if(msg.includes('API_KEY_INVALID') || msg.includes('invalid') || msg.includes('API key'))
       friendly = "🔑 There's a problem with the app's API key. Please let your teacher know!";

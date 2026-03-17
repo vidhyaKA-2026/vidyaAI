@@ -388,6 +388,8 @@ input::placeholder{color:var(--muted2)}
 .send-btn.on{background:var(--saffron);color:#fff;box-shadow:0 2px 8px rgba(232,114,12,.35)}
 .send-btn.on:hover{background:var(--saffron-d);transform:scale(1.05)}
 .send-btn.off{background:var(--surface2);color:var(--muted2);cursor:not-allowed}
+.send-btn.stop{background:#fef2f2;color:var(--red);border:1.5px solid #fecaca;cursor:pointer}
+.send-btn.stop:hover{background:var(--red);color:#fff}
 
 .input-footer{max-width:720px;margin:6px auto 0;display:flex;align-items:center;justify-content:center}
 .input-note{font-size:11px;color:var(--muted2);text-align:center}
@@ -1095,10 +1097,36 @@ function launchApp(){
   // Show remaining requests
   const rc = document.getElementById('reqCount');
   if(rc) rc.textContent = getRemainingRequests() + ' questions left today';
+
+  // Save session for refresh restore
+  saveSession();
+}
+
+function saveSession(){
+  try{
+    localStorage.setItem('vidya_session', JSON.stringify({
+      name: STU_NAME, subject: SUBJECT, mode: MODE, ts: Date.now()
+    }));
+  }catch(e){}
+}
+
+function loadSession(){
+  try{
+    const raw = localStorage.getItem('vidya_session');
+    if(!raw) return false;
+    const s = JSON.parse(raw);
+    if(!s.name || (Date.now() - s.ts) > 86400000) return false;
+    STU_NAME = s.name;
+    SUBJECT  = s.subject || 'All Subjects';
+    MODE     = s.mode    || 'tutor';
+    _pickedSubject = SUBJECT;
+    return true;
+  }catch(e){ return false; }
 }
 
 function switchSubject(){ goToStep(3); }
 function exitApp(){
+  try{ localStorage.removeItem('vidya_session'); } catch(e){}
   document.getElementById('wizard').style.display='flex';
   document.getElementById('app').style.display='none';
   document.getElementById('app').classList.remove('active');
@@ -1302,7 +1330,23 @@ function resizeTA(el){ el.style.height='auto'; el.style.height=Math.min(el.scrol
 function updateSend(){
   const v=document.getElementById('chatInput').value.trim();
   const hasFile=!!uploadedDataUrl;
-  document.getElementById('sendBtn').className=((v||hasFile)&&!loading)?'send-btn on':'send-btn off';
+  const btn=document.getElementById('sendBtn');
+  if(loading){
+    btn.className='send-btn stop';
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>';
+    btn.onclick=stopGeneration;
+  } else {
+    btn.className=((v||hasFile))?'send-btn on':'send-btn off';
+    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>';
+    btn.onclick=sendMsg;
+  }
+}
+
+function stopGeneration(){
+  if(_abortController){ _abortController.abort(); }
+  loading=false;
+  updateSend();
+  addBubble('bot','⏹ Response stopped. Ask another question!');
 }
 
 let _lastUserMsg = null; // stores last message for quota retry
@@ -1364,9 +1408,10 @@ async function sendMsg(retryMsg){
   const tid=showTyping();
 
   try{
-    const resp=await fetch(
+    _abortController = new AbortController();
+  const resp=await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent?key=${GEM_KEY}`,
-      {method:'POST',headers:{'Content-Type':'application/json'},
+      {method:'POST',headers:{'Content-Type':'application/json'},signal:_abortController.signal,
        body:JSON.stringify({
          system_instruction:{parts:[{text:sysPrompt()}]},
          contents:history,
@@ -1384,7 +1429,7 @@ async function sendMsg(retryMsg){
     history.push({role:'model',parts:[{text:reply}]});
     // Check if user asked for diagram — fetch images
     if(isDiagramRequest(txt || _lastUserMsg || '')){
-      fetchDiagramImages((txt || _lastUserMsg || '') + ' ' + SUBJECT).then(imgs=>{
+      getDiagramImages((txt || _lastUserMsg || '') + ' ' + SUBJECT).then(imgs=>{
         if(imgs.length){
           const imgRow = document.createElement('div');
           imgRow.className = 'msg-row bot';
@@ -1460,6 +1505,8 @@ async function sendMsg(retryMsg){
       friendly = "🤔 Something went wrong with that request. Try asking differently!";
     else if(msg.includes('404') || msg.includes('not found'))
       friendly = "🔧 Model not available. Please let your teacher know!";
+    else if(msg.includes('AbortError') || msg.includes('abort') || msg.includes('The user aborted'))
+      return; // silent — user clicked stop
     else
       friendly = "😕 Something went wrong (" + msg.slice(0,60) + "). Please try again!";
     addBubble('bot', friendly);
@@ -2936,10 +2983,18 @@ function formatRefBody(text){
 }
 
 // Init ref on page load with all items visible
-window.addEventListener('DOMContentLoaded',()=>{ 
-  renderRef(); 
-  validateS1(); 
+window.addEventListener('DOMContentLoaded',()=>{
+  renderRef();
+  validateS1();
   validateS2();
+  // Try to restore previous session
+  if(loadSession()){
+    // Pre-fill name input so goToStep(3) works
+    const ni = document.getElementById('nameInput');
+    if(ni){ ni.value = STU_NAME; validateS2(); }
+    // Auto-launch directly into app
+    launchApp();
+  }
 });
 
 // ── VOICE INPUT (Speech to Text) ─────────────────────────────────
@@ -3217,20 +3272,71 @@ function isDiagramRequest(txt){
          lower.includes('label') || lower.includes('figure');
 }
 
-// Search Wikimedia/educational images for diagrams
+// Fetch diagram images from Wikipedia
 async function fetchDiagramImages(query){
-  const searchQ = encodeURIComponent(query + ' diagram labeled biology chemistry physics');
-  const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${searchQ}&gsrlimit=4&prop=pageimages&piprop=thumbnail&pithumbsize=300&format=json&origin=*`;
+  const cleanQ = query.replace(/diagram|draw|show me|image of|picture of|label|figure/gi,'').trim();
+  const searchQ = encodeURIComponent(cleanQ);
+  const url = 'https://en.wikipedia.org/w/api.php'
+    + '?action=query&format=json&origin=*'
+    + '&generator=search&gsrsearch=' + searchQ + '&gsrlimit=6'
+    + '&prop=pageimages&piprop=thumbnail&pithumbsize=400';
   try{
     const resp = await fetch(url);
+    if(!resp.ok) return [];
     const data = await resp.json();
     const pages = Object.values(data?.query?.pages || {});
-    return pages.filter(p=>p.thumbnail).map(p=>({
-      title: p.title,
-      src: p.thumbnail.source,
-      url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(p.title)
-    }));
-  } catch(e){ return []; }
+    return pages
+      .filter(p => p.thumbnail?.source)
+      .slice(0, 4)
+      .map(p => ({
+        title: p.title,
+        src: p.thumbnail.source,
+        url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(p.title)
+      }));
+  }catch(e){ console.log('Wiki fetch error:', e); return []; }
+}
+
+// Also search Wikimedia Commons for better labeled diagrams
+async function fetchCommonsImages(query){
+  const cleanQ = query.replace(/diagram|draw|show me|image of|picture of|label|figure/gi,'').trim();
+  const searchQ = encodeURIComponent(cleanQ + ' diagram');
+  // Wikimedia Commons: search namespace 6 (File:) for images
+  const url = 'https://commons.wikimedia.org/w/api.php'
+    + '?action=query&format=json&origin=*'
+    + '&generator=search&gsrnamespace=6'
+    + '&gsrsearch=' + searchQ + '&gsrlimit=8'
+    + '&prop=imageinfo'
+    + '&iiprop=url&iiurlwidth=400';
+  try{
+    const resp = await fetch(url);
+    if(!resp.ok) return [];
+    const data = await resp.json();
+    const pages = Object.values(data?.query?.pages || {});
+    return pages
+      .filter(p => {
+        const ii = p.imageinfo?.[0];
+        if(!ii) return false;
+        const u = (ii.thumburl || ii.url || '').toLowerCase();
+        // Only images, not audio/video/svg problems
+        return u.match(/\.(jpg|jpeg|png|gif|svg)/);
+      })
+      .slice(0, 4)
+      .map(p => {
+        const ii = p.imageinfo[0];
+        return {
+          title: p.title.replace('File:','').replace(/_/g,' ').replace(/\.[^.]+$/,'').slice(0,55),
+          src: ii.thumburl || ii.url,
+          url: 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(p.title)
+        };
+      });
+  }catch(e){ console.log('Commons error:',e); return []; }
+}
+
+async function getDiagramImages(query){
+  const commons = await fetchCommonsImages(query);
+  if(commons.length >= 2) return commons;
+  const wiki = await fetchDiagramImages(query);
+  return [...commons, ...wiki].slice(0,4);
 }
 
 function renderImageGrid(images){

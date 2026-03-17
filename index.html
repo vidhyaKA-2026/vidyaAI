@@ -796,6 +796,18 @@ function getCurrentKey(){ return KEYS[_keyIndex]; }
 
 let GEM_KEY=getCurrentKey(), STU_NAME='', SUBJECT='', MODE='tutor';
 
+function saveSession(){
+  try{ localStorage.setItem('vidya_session',JSON.stringify({name:STU_NAME,subject:SUBJECT,mode:MODE,ts:Date.now()})); }catch(e){}
+}
+function loadSession(){
+  try{
+    const s=JSON.parse(localStorage.getItem('vidya_session')||'{}');
+    if(!s.name||(Date.now()-s.ts)>86400000) return false;
+    STU_NAME=s.name; SUBJECT=s.subject||'All Subjects'; MODE=s.mode||'tutor'; _pickedSubject=SUBJECT;
+    return true;
+  }catch(e){return false;}
+}
+
 // ── MODEL & RATE LIMITING ─────────────────────────────────────────
 const CURRENT_MODEL = 'gemini-2.5-flash'; // switch to 'gemini-2.5-flash' to enable per-user limit
 const USER_DAILY_LIMIT = 20;
@@ -1097,36 +1109,10 @@ function launchApp(){
   // Show remaining requests
   const rc = document.getElementById('reqCount');
   if(rc) rc.textContent = getRemainingRequests() + ' questions left today';
-
-  // Save session for refresh restore
-  saveSession();
-}
-
-function saveSession(){
-  try{
-    localStorage.setItem('vidya_session', JSON.stringify({
-      name: STU_NAME, subject: SUBJECT, mode: MODE, ts: Date.now()
-    }));
-  }catch(e){}
-}
-
-function loadSession(){
-  try{
-    const raw = localStorage.getItem('vidya_session');
-    if(!raw) return false;
-    const s = JSON.parse(raw);
-    if(!s.name || (Date.now() - s.ts) > 86400000) return false;
-    STU_NAME = s.name;
-    SUBJECT  = s.subject || 'All Subjects';
-    MODE     = s.mode    || 'tutor';
-    _pickedSubject = SUBJECT;
-    return true;
-  }catch(e){ return false; }
 }
 
 function switchSubject(){ goToStep(3); }
 function exitApp(){
-  try{ localStorage.removeItem('vidya_session'); } catch(e){}
   document.getElementById('wizard').style.display='flex';
   document.getElementById('app').style.display='none';
   document.getElementById('app').classList.remove('active');
@@ -1331,22 +1317,16 @@ function updateSend(){
   const v=document.getElementById('chatInput').value.trim();
   const hasFile=!!uploadedDataUrl;
   const btn=document.getElementById('sendBtn');
+  if(!btn) return;
   if(loading){
     btn.className='send-btn stop';
     btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>';
     btn.onclick=stopGeneration;
   } else {
-    btn.className=((v||hasFile))?'send-btn on':'send-btn off';
+    btn.className=(v||hasFile)?'send-btn on':'send-btn off';
     btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>';
     btn.onclick=sendMsg;
   }
-}
-
-function stopGeneration(){
-  if(_abortController){ _abortController.abort(); }
-  loading=false;
-  updateSend();
-  addBubble('bot','⏹ Response stopped. Ask another question!');
 }
 
 let _lastUserMsg = null; // stores last message for quota retry
@@ -1408,7 +1388,7 @@ async function sendMsg(retryMsg){
   const tid=showTyping();
 
   try{
-    _abortController = new AbortController();
+    _abortController=new AbortController();
   const resp=await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent?key=${GEM_KEY}`,
       {method:'POST',headers:{'Content-Type':'application/json'},signal:_abortController.signal,
@@ -1429,7 +1409,7 @@ async function sendMsg(retryMsg){
     history.push({role:'model',parts:[{text:reply}]});
     // Check if user asked for diagram — fetch images
     if(isDiagramRequest(txt || _lastUserMsg || '')){
-      getDiagramImages((txt || _lastUserMsg || '') + ' ' + SUBJECT).then(imgs=>{
+      fetchDiagramImages((txt || _lastUserMsg || '') + ' ' + SUBJECT).then(imgs=>{
         if(imgs.length){
           const imgRow = document.createElement('div');
           imgRow.className = 'msg-row bot';
@@ -1439,31 +1419,7 @@ async function sendMsg(retryMsg){
         }
       });
     }
-    // Check if user asked for videos — fetch YouTube results
-    if(isVideoRequest(txt || _lastUserMsg || '')){
-      const videoQuery = (txt || _lastUserMsg || '') + ' ' + SUBJECT;
-      fetchYouTubeVideos(videoQuery).then(vids=>{
-        const vidRow = document.createElement('div');
-        vidRow.className = 'msg-row bot';
-        vidRow.innerHTML = '<div class="bot-av">📺</div><div class="msg-content"><div class="msg-sender">Video Search</div>' + renderVideoGrid(vids, videoQuery) + '</div>';
-        document.getElementById('msgsInner').appendChild(vidRow);
-        scrollChat();
-      });
-    }
     addBubble('bot',reply);
-    // If AI response mentions videos/YouTube, proactively show search
-    if(reply.toLowerCase().includes('video') || reply.toLowerCase().includes('youtube')){
-      if(!isVideoRequest(txt || _lastUserMsg || '')){
-        const vq = (txt || _lastUserMsg || '') + ' ' + SUBJECT;
-        fetchYouTubeVideos(vq).then(vids=>{
-          const vr = document.createElement('div');
-          vr.className = 'msg-row bot';
-          vr.innerHTML = '<div class="bot-av">📺</div><div class="msg-content"><div class="msg-sender">Video Search</div>' + renderVideoGrid(vids, vq) + '</div>';
-          document.getElementById('msgsInner').appendChild(vr);
-          scrollChat();
-        });
-      }
-    }
     incrementUsage();
     // Show remaining count every 5 requests
     const rem = getRemainingRequests();
@@ -1505,8 +1461,6 @@ async function sendMsg(retryMsg){
       friendly = "🤔 Something went wrong with that request. Try asking differently!";
     else if(msg.includes('404') || msg.includes('not found'))
       friendly = "🔧 Model not available. Please let your teacher know!";
-    else if(msg.includes('AbortError') || msg.includes('abort') || msg.includes('The user aborted'))
-      return; // silent — user clicked stop
     else
       friendly = "😕 Something went wrong (" + msg.slice(0,60) + "). Please try again!";
     addBubble('bot', friendly);
@@ -1627,7 +1581,7 @@ SCOPE: Karnataka DSERT/KTBS Class 10 SSLC 2025-26 ONLY.
 ${allSubjNote}
 ${quizInstructions}
 
-NOTE FOR STUDENTS: For additional practice questions, the YouTube channel @the video search feature finds relevant YouTube videos automatically. Recommend students need more practice.
+NOTE FOR STUDENTS: For additional practice questions, the YouTube channel @Udaan_Deepak has excellent SSLC 2025-26 preparation playlists. Recommend it when students need more practice.
 
 ════════════════════════════════════════════
 VERIFIED OFFICIAL BLUEPRINTS (from KSEAB 2025-26 PDFs)
@@ -2983,18 +2937,35 @@ function formatRefBody(text){
 }
 
 // Init ref on page load with all items visible
-window.addEventListener('DOMContentLoaded',()=>{
-  renderRef();
-  validateS1();
+
+// ── INSTANT DIAGRAM SEARCH LINKS ─────────────────────────────
+function isDiagramRequest(txt){
+  const l=txt.toLowerCase();
+  return l.includes('diagram')||l.includes('draw')||l.includes('show me')||
+         l.includes('image of')||l.includes('picture')||l.includes('structure of')||
+         l.includes('label')||l.includes('figure');
+}
+function renderDiagramLinks(query){
+  const q=query.replace(/diagram|draw|show me|image of|picture|label|figure|of the|of a/gi,'').trim();
+  const enc=encodeURIComponent(q+' labeled diagram');
+  return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">'
+    +'<a href="https://www.google.com/search?tbm=isch&q='+enc+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:999px;background:#eff6ff;border:1.5px solid #bfdbfe;color:#1d4ed8;font-size:13px;font-weight:600;text-decoration:none">🔍 Google Images</a>'
+    +'<a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(q.replace(/ /g,'_'))+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:999px;background:#f0fdf4;border:1.5px solid #bbf7d0;color:#15803d;font-size:13px;font-weight:600;text-decoration:none">📖 Wikipedia</a>'
+    +'<a href="https://commons.wikimedia.org/w/index.php?search='+enc+'&ns6=1" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:999px;background:#fff7ed;border:1.5px solid #fed7aa;color:#c2410c;font-size:13px;font-weight:600;text-decoration:none">🖼️ Wikimedia</a>'
+    +'</div>';
+}
+function showDiagramLinks(query){
+  const inner=document.getElementById('msgsInner');
+  if(!inner) return;
+  const row=document.createElement('div');
+  row.className='msg-row bot';
+  row.innerHTML='<div class="bot-av">🖼️</div><div class="msg-content"><div class="msg-sender" style="color:var(--muted);font-size:12px">Find diagrams →</div>'+renderDiagramLinks(query)+'</div>';
+  inner.appendChild(row); scrollChat();
+}
+window.addEventListener('DOMContentLoaded',()=>{ 
+  renderRef(); 
+  validateS1(); 
   validateS2();
-  // Try to restore previous session
-  if(loadSession()){
-    // Pre-fill name input so goToStep(3) works
-    const ni = document.getElementById('nameInput');
-    if(ni){ ni.value = STU_NAME; validateS2(); }
-    // Auto-launch directly into app
-    launchApp();
-  }
 });
 
 // ── VOICE INPUT (Speech to Text) ─────────────────────────────────
@@ -3143,116 +3114,6 @@ function stopSpeaking(){
 // ── WEB SEARCH TOGGLE ────────────────────────────────────────────
 let WEB_SEARCH_ON = true;
 
-// ── YOUTUBE VIDEO SEARCH ─────────────────────────────────────────
-// Uses YouTube's oembed + search suggestion API (no API key needed)
-function isVideoRequest(txt){
-  const lower = txt.toLowerCase();
-  return lower.includes('video') || lower.includes('youtube') ||
-         lower.includes('watch') || lower.includes('explain with video') ||
-         lower.includes('show video') || lower.includes('visual') ||
-         lower.includes('lecture') || lower.includes('tutorial');
-}
-
-async function fetchYouTubeVideos(query){
-  // Use YouTube search via a CORS-friendly proxy approach
-  // We'll use the YouTube search suggestions + construct search URLs
-  const searchTerms = [
-    query + ' Karnataka SSLC Class 10',
-    query + ' SSLC 2025',
-    query + ' Class 10 explained'
-  ];
-  
-  // Build direct YouTube search links (no API key needed)
-  const videos = searchTerms.map((term, i) => ({
-    title: term,
-    searchUrl: 'https://www.youtube.com/results?search_query=' + encodeURIComponent(term),
-    thumbnail: null,
-    isSearch: true
-  }));
-
-  // Also try to get actual video embeds via YouTube no-cookie
-  try {
-    const q = encodeURIComponent(query + ' SSLC Karnataka Class 10 2025');
-    // Use Invidious public API (open source YouTube frontend, no key needed)
-    const apis = [
-      `https://inv.nadeko.net/api/v1/search?q=${q}&type=video&page=1`,
-      `https://invidious.fdn.fr/api/v1/search?q=${q}&type=video&page=1`,
-    ];
-    
-    for(const api of apis){
-      try{
-        const resp = await fetch(api, {signal: AbortSignal.timeout(4000)});
-        if(!resp.ok) continue;
-        const data = await resp.json();
-        if(data && data.length){
-          return data.slice(0,4).map(v => ({
-            title: v.title,
-            videoId: v.videoId,
-            author: v.author,
-            thumbnail: `https://i.ytimg.com/vi/${v.videoId}/mqdefault.jpg`,
-            url: `https://www.youtube.com/watch?v=${v.videoId}`,
-            isSearch: false
-          }));
-        }
-      }catch(e){ continue; }
-    }
-  }catch(e){}
-
-  // Fallback: return search links
-  return videos;
-}
-
-function renderVideoGrid(videos, query){
-  if(!videos.length) return '';
-  
-  const searchUrl = 'https://www.youtube.com/results?search_query=' + 
-    encodeURIComponent(query + ' SSLC Karnataka Class 10');
-  
-  let html = '<div style="margin:12px 0">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">📺 Relevant Videos</div>';
-  
-  if(videos[0].isSearch){
-    // Show search links
-    html += '<div style="display:flex;flex-direction:column;gap:7px">';
-    const terms = [
-      query + ' Karnataka SSLC Class 10',
-      query + ' SSLC 2025 explained',
-      query + ' Class 10 Karnataka Board'
-    ];
-    terms.forEach(term => {
-      const url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(term);
-      html += `<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1.5px solid var(--border);border-radius:10px;text-decoration:none;transition:all .15s;color:var(--ink)" onmouseover="this.style.borderColor='#ff0000'" onmouseout="this.style.borderColor='var(--border)'">
-        <span style="font-size:18px">▶️</span>
-        <span style="font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(term)}</span>
-        <span style="font-size:11px;color:var(--muted);flex-shrink:0">Search on YouTube →</span>
-      </a>`;
-    });
-    html += '</div>';
-  } else {
-    // Show actual video thumbnails
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">';
-    videos.forEach(v => {
-      html += `<a href="${v.url}" target="_blank" style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:#fff;text-decoration:none;display:block;transition:all .15s" onmouseover="this.style.borderColor='#ff0000'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="position:relative">
-          <img src="${v.thumbnail}" alt="${escHtml(v.title)}" style="width:100%;height:100px;object-fit:cover;display:block" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"/>
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
-            <div style="width:36px;height:36px;background:rgba(0,0,0,.7);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px">▶</div>
-          </div>
-        </div>
-        <div style="padding:7px 9px">
-          <div style="font-size:12px;font-weight:600;color:var(--ink);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${escHtml(v.title)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px">${escHtml(v.author||'YouTube')}</div>
-        </div>
-      </a>`;
-    });
-    html += '</div>';
-  }
-  
-  html += `<a href="${searchUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:12px;color:#ff0000;font-weight:600;text-decoration:none">🔴 More videos on YouTube →</a>`;
-  html += '</div>';
-  return html;
-}
-
 function toggleWebSearch(){
   WEB_SEARCH_ON = !WEB_SEARCH_ON;
   const btn = document.getElementById('webSearchBtn');
@@ -3272,71 +3133,20 @@ function isDiagramRequest(txt){
          lower.includes('label') || lower.includes('figure');
 }
 
-// Fetch diagram images from Wikipedia
+// Search Wikimedia/educational images for diagrams
 async function fetchDiagramImages(query){
-  const cleanQ = query.replace(/diagram|draw|show me|image of|picture of|label|figure/gi,'').trim();
-  const searchQ = encodeURIComponent(cleanQ);
-  const url = 'https://en.wikipedia.org/w/api.php'
-    + '?action=query&format=json&origin=*'
-    + '&generator=search&gsrsearch=' + searchQ + '&gsrlimit=6'
-    + '&prop=pageimages&piprop=thumbnail&pithumbsize=400';
+  const searchQ = encodeURIComponent(query + ' diagram labeled biology chemistry physics');
+  const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${searchQ}&gsrlimit=4&prop=pageimages&piprop=thumbnail&pithumbsize=300&format=json&origin=*`;
   try{
     const resp = await fetch(url);
-    if(!resp.ok) return [];
     const data = await resp.json();
     const pages = Object.values(data?.query?.pages || {});
-    return pages
-      .filter(p => p.thumbnail?.source)
-      .slice(0, 4)
-      .map(p => ({
-        title: p.title,
-        src: p.thumbnail.source,
-        url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(p.title)
-      }));
-  }catch(e){ console.log('Wiki fetch error:', e); return []; }
-}
-
-// Also search Wikimedia Commons for better labeled diagrams
-async function fetchCommonsImages(query){
-  const cleanQ = query.replace(/diagram|draw|show me|image of|picture of|label|figure/gi,'').trim();
-  const searchQ = encodeURIComponent(cleanQ + ' diagram');
-  // Wikimedia Commons: search namespace 6 (File:) for images
-  const url = 'https://commons.wikimedia.org/w/api.php'
-    + '?action=query&format=json&origin=*'
-    + '&generator=search&gsrnamespace=6'
-    + '&gsrsearch=' + searchQ + '&gsrlimit=8'
-    + '&prop=imageinfo'
-    + '&iiprop=url&iiurlwidth=400';
-  try{
-    const resp = await fetch(url);
-    if(!resp.ok) return [];
-    const data = await resp.json();
-    const pages = Object.values(data?.query?.pages || {});
-    return pages
-      .filter(p => {
-        const ii = p.imageinfo?.[0];
-        if(!ii) return false;
-        const u = (ii.thumburl || ii.url || '').toLowerCase();
-        // Only images, not audio/video/svg problems
-        return u.match(/\.(jpg|jpeg|png|gif|svg)/);
-      })
-      .slice(0, 4)
-      .map(p => {
-        const ii = p.imageinfo[0];
-        return {
-          title: p.title.replace('File:','').replace(/_/g,' ').replace(/\.[^.]+$/,'').slice(0,55),
-          src: ii.thumburl || ii.url,
-          url: 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(p.title)
-        };
-      });
-  }catch(e){ console.log('Commons error:',e); return []; }
-}
-
-async function getDiagramImages(query){
-  const commons = await fetchCommonsImages(query);
-  if(commons.length >= 2) return commons;
-  const wiki = await fetchDiagramImages(query);
-  return [...commons, ...wiki].slice(0,4);
+    return pages.filter(p=>p.thumbnail).map(p=>({
+      title: p.title,
+      src: p.thumbnail.source,
+      url: 'https://en.wikipedia.org/wiki/' + encodeURIComponent(p.title)
+    }));
+  } catch(e){ return []; }
 }
 
 function renderImageGrid(images){

@@ -389,7 +389,7 @@ input::placeholder{color:var(--muted2)}
 .send-btn.on:hover{background:var(--saffron-d);transform:scale(1.05)}
 .send-btn.off{background:var(--surface2);color:var(--muted2);cursor:not-allowed}
 .send-btn.stop{background:#fef2f2;color:var(--red);border:1.5px solid #fecaca;cursor:pointer}
-.send-btn.stop:hover{background:var(--red);color:#fff}
+.send-btn.stop:hover{background:var(--red);color:#fff;transform:scale(1.05)}
 
 .input-footer{max-width:720px;margin:6px auto 0;display:flex;align-items:center;justify-content:center}
 .input-note{font-size:11px;color:var(--muted2);text-align:center}
@@ -632,7 +632,7 @@ input::placeholder{color:var(--muted2)}
     </div>
     <div class="tb-right">
       <span id="reqBadge" class="req-badge"></span>
-      <button class="tbbtn" onclick="toggleCanvas()" title="AI Diagram Board">🎨</button>
+      <button id="progressBadge" onclick="showProgressDashboard()" title="View your progress" style="display:none;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:#fff7ed;color:#e8720c;border:1.5px solid #fed7aa;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s"></button>
       <div class="user-chip" onclick="goToStep(3)" title="Settings">
         <div class="user-av" id="userAvatar">?</div>
         <span class="user-name-display" id="tbName">Student</span>
@@ -770,9 +770,6 @@ input::placeholder{color:var(--muted2)}
 </div>
 
 <script>
-
-
-
 /* ══════════════════════════════════════════
    STATE
 ══════════════════════════════════════════ */
@@ -785,7 +782,7 @@ const KEYS = [
   ['AIzaSyCqlwgeb','S4E7xdmd8e-xr','GV5_rqSE0YfRk'],
   ['AIzaSyDd1L8u7','ex_hkXribhBCB','yb76JbWFBxIpc'],
 ].map(k=>k[0]+k[1]+k[2]);
-const CURRENT_MODEL='gemini-2.5-flash';
+const CURRENT_MODEL='gemini-2.0-flash';
 
 let _keyIndex = 0;
 function getNextKey(){
@@ -796,6 +793,8 @@ function getCurrentKey(){ return KEYS[_keyIndex]; }
 // ─────────────────────────────────────────────────────────────────
 
 let GEM_KEY=getCurrentKey(), STU_NAME='', SUBJECT='', MODE='tutor';
+let ADMIN_MODE=false, AUTO_SPEAK=false, WEB_SEARCH_ON=true;
+let _abortCtrl=null, _lastUserMsg=null;
 
 // ── MODEL & RATE LIMITING ─────────────────────────────────────────
 const USER_DAILY_LIMIT = 20;
@@ -852,12 +851,6 @@ function checkRateLimit(){
   return true;
 }
 
-
-// ── MISSING STATE VARIABLES ──────────────────────────────────
-let AUTO_SPEAK = false;
-let WEB_SEARCH_ON = true;
-let _abortCtrl = null;
-let _lastUserMsg = null;
 
 function toggleAutoSpeak(){
   AUTO_SPEAK = !AUTO_SPEAK;
@@ -1071,10 +1064,17 @@ function launchApp(){
 
   // Default to chat tab
   switchTab('chat');
-
-  // Show remaining requests
-  const rc = document.getElementById('reqCount');
-  if(rc) rc.textContent = getRemainingRequests() + ' questions left today';
+  // Update user avatar and name
+  const av=document.getElementById('userAvatar');
+  if(av) av.textContent=STU_NAME.charAt(0).toUpperCase();
+  const nm=document.getElementById('tbName');
+  if(nm) nm.textContent=STU_NAME;
+  // Show request badge
+  updateRequestBadge();
+  const badge=document.getElementById('reqBadge');
+  if(badge) badge.style.display='inline-block';
+  // Save session for refresh restore
+  saveSession();
 }
 
 function switchSubject(){ goToStep(3); }
@@ -1259,11 +1259,7 @@ What do you want to tackle first?`
   wc.className='msg-row bot';
   const chipHtml=chipList.map(c=>`<button class="chip" onclick="quickAsk('${c.replace(/'/g,"\\'")}')">💬 ${c}</button>`).join('');
   const formattedMsg = formatMsg(msg,'bot');
-  wc.innerHTML=`<div class="bot-av">🤖</div>
-    <div style="max-width:82%">
-      <div class="bubble bot">${formattedMsg}</div>
-      <div class="chips-wrap" style="margin-top:10px">${chipHtml}</div>
-    </div>`;
+  wc.innerHTML=`<div class="bot-av">🤖</div><div class="msg-content"><div class="msg-sender">Vidya</div><div class="msg-text">${formattedMsg}</div><div class="chips-wrap" style="margin-top:10px">${chipHtml}</div></div>`;
   document.getElementById('msgsInner').appendChild(wc);
   history.push({role:'model',parts:[{text:msg.replace(/<[^>]+>/g,'').replace(/\*\*/g,'')}]});
   scrollChat();
@@ -1355,7 +1351,7 @@ async function sendMsg(retryMsg){
        body:JSON.stringify({
          system_instruction:{parts:[{text:sysPrompt()}]},
          contents:history,
-         generationConfig:{temperature:0.72,maxOutputTokens:900}
+         generationConfig:{temperature:0.5,maxOutputTokens:700}
        })}
     );
     hideTyping(tid);
@@ -1783,6 +1779,20 @@ Sonnet 73(Shakespeare): old age/death metaphors: autumn/twilight/dying fire; 14-
 Mending Wall(Frost): "Good fences make good neighbours"; barriers/boundaries
 Grammar: question tags(+statement→-tag; -statement→+tag); phrasal verbs(break out/run over/take over/look up); voice; degrees; figures of speech
 
+RESPONSE SPEED RULES:
+⚡ INSTANT (reply immediately, no preamble):
+  - "Which chapters have highest marks?" → give the table directly
+  - "What is [formula]?" → give formula directly
+  - "Who is [person]?" → answer directly
+  - Any factual/blueprint question → answer instantly from your knowledge
+  - Quick definitions, dates, formulas, chapter names
+
+🧠 THINK CAREFULLY (complex problems only):
+  - Multi-step Maths problems
+  - Essay writing
+  - Proof questions
+  - Comparing multiple concepts
+
 RESPONSE RULES:
 1. Be SPECIFIC: name chapter, state marks, quote formula — never vague
 2. Maths: write formula FIRST, then substitute; show every step; include units
@@ -1791,6 +1801,7 @@ RESPONSE RULES:
 5. English: RTC = Quote→Context→Significance; grammar = Rule + 3 examples
 6. Bold key terms **like this**; use numbered lists for steps; structured sections
 7. End with 1 follow-up question
+8. NEVER say "Let me think..." or "Great question!" — just answer directly
 
 PERSONALITY:
 - Warm and fun, like a brilliant friend who loves explaining things
@@ -1880,6 +1891,8 @@ function selectMCQ(cardId, chosen, correct){
   card.classList.remove('active');
   card.classList.add('answered');
   const answer = chosen + ') ' + (card.querySelector('[data-letter="'+chosen+'"]')?.dataset.text || chosen);
+  // Record progress
+  recordAnswer(chosen===correct, SUBJECT);
   submitQuizAnswer(cardId, answer);
 }
 
@@ -2858,6 +2871,129 @@ function formatRefBody(text){
 }
 
 // Init ref on page load with all items visible
+
+// ══════════════════════════════════════════
+//   PROGRESS TRACKING SYSTEM
+// ══════════════════════════════════════════
+function getProgress(){
+  try{
+    const p = JSON.parse(localStorage.getItem('vidya_progress')||'{}');
+    return Object.assign({totalQuestions:0,correct:0,wrong:0,streak:0,bestStreak:0,subjects:{}}, p);
+  }catch(e){ return {totalQuestions:0,correct:0,wrong:0,streak:0,bestStreak:0,subjects:{}}; }
+}
+function saveProgress(p){ try{localStorage.setItem('vidya_progress',JSON.stringify(p));}catch(e){} }
+
+function recordAnswer(isCorrect, subject){
+  const p = getProgress();
+  const s = subject || SUBJECT || 'All Subjects';
+  if(!p.subjects[s]) p.subjects[s]={correct:0,wrong:0};
+  p.totalQuestions++;
+  if(isCorrect){
+    p.correct++; p.subjects[s].correct++;
+    p.streak=(p.streak||0)+1;
+    if(p.streak>p.bestStreak) p.bestStreak=p.streak;
+  } else {
+    p.wrong++; p.subjects[s].wrong++;
+    p.streak=0;
+  }
+  saveProgress(p);
+  updateProgressBadge();
+}
+
+function getProgressSummary(){
+  const p=getProgress();
+  if(!p.totalQuestions) return null;
+  const acc=Math.round((p.correct/p.totalQuestions)*100);
+  let strong='-', weak='-', maxC=-1, maxW=-1;
+  for(const s in p.subjects){
+    const {correct,wrong}=p.subjects[s];
+    if(correct>maxC){maxC=correct;strong=s;}
+    if(wrong>maxW){maxW=wrong;weak=s;}
+  }
+  return {total:p.totalQuestions,correct:p.correct,wrong:p.wrong,
+          accuracy:acc,strong,weak,streak:p.streak,bestStreak:p.bestStreak};
+}
+
+function updateProgressBadge(){
+  const p=getProgress();
+  if(!p.totalQuestions) return;
+  const acc=Math.round((p.correct/p.totalQuestions)*100);
+  const el=document.getElementById('progressBadge');
+  if(el){
+    el.style.display='inline-block';
+    el.textContent=`🎯 ${acc}% · 🔥${p.streak}`;
+    el.title=`${p.correct}✓ ${p.wrong}✗ out of ${p.totalQuestions} questions`;
+  }
+}
+
+function showProgressDashboard(){
+  const sm=getProgressSummary();
+  const panel=document.getElementById('progressPanel');
+  if(!panel) return;
+  if(panel.style.display==='flex'){ panel.style.display='none'; return; }
+  if(!sm){
+    panel.innerHTML='<div style="padding:20px;text-align:center;color:#9c8878"><div style="font-size:32px;margin-bottom:8px">📊</div><div style="font-weight:600">No progress yet!</div><div style="font-size:13px;margin-top:6px">Answer some quiz questions to see your stats here.</div></div>';
+    panel.style.display='flex';
+    return;
+  }
+  const color=sm.accuracy>=80?'#1a7a3c':sm.accuracy>=60?'#d97706':'#c42020';
+  const subjectRows=Object.entries(
+    Object.fromEntries(Object.entries(
+      (()=>{ const p=getProgress(); return p.subjects||{}; })()
+    ).sort(([,a],[,b])=>(b.correct+b.wrong)-(a.correct+a.wrong)))
+  ).slice(0,6).map(([s,d])=>{
+    const tot=d.correct+d.wrong;
+    const pct=tot?Math.round((d.correct/tot)*100):0;
+    const bar=`<div style="height:6px;background:#e8ddd0;border-radius:3px;margin-top:4px"><div style="height:6px;width:${pct}%;background:${pct>=80?'#1a7a3c':pct>=60?'#d97706':'#c42020'};border-radius:3px;transition:width .4s"></div></div>`;
+    return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px"><span style="font-weight:600;color:#3d2e1a">${s}</span><span style="color:${pct>=80?'#1a7a3c':'#c42020'};font-weight:700">${d.correct}✓ ${d.wrong}✗ · ${pct}%</span></div>${bar}</div>`;
+  }).join('');
+  panel.innerHTML=`
+    <div style="padding:16px;flex:1;overflow-y:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:800;color:#1a1207">📊 Your Progress</div>
+        <button onclick="document.getElementById('progressPanel').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:18px;color:#9c8878">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <div style="background:#f9f5f0;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:28px;font-weight:900;color:${color}">${sm.accuracy}%</div>
+          <div style="font-size:11px;color:#9c8878;font-weight:600">ACCURACY</div>
+        </div>
+        <div style="background:#f9f5f0;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:28px;font-weight:900;color:#e8720c">${sm.total}</div>
+          <div style="font-size:11px;color:#9c8878;font-weight:600">TOTAL Qs</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:#1a7a3c">🔥${sm.streak}</div>
+          <div style="font-size:11px;color:#9c8878;font-weight:600">STREAK</div>
+        </div>
+        <div style="background:#fff7ed;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:#d97706">⭐${sm.bestStreak}</div>
+          <div style="font-size:11px;color:#9c8878;font-weight:600">BEST</div>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:#9c8878;text-transform:uppercase;margin-bottom:8px">By Subject</div>
+        ${subjectRows||'<div style="color:#9c8878;font-size:13px">No subject data yet</div>'}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="flex:1;background:#f0fdf4;border-radius:8px;padding:10px;font-size:12px">
+          <div style="color:#9c8878;font-weight:600;margin-bottom:2px">💪 STRONG</div>
+          <div style="font-weight:700;color:#1a7a3c">${sm.strong}</div>
+        </div>
+        <div style="flex:1;background:#fef2f2;border-radius:8px;padding:10px;font-size:12px">
+          <div style="color:#9c8878;font-weight:600;margin-bottom:2px">🎯 NEEDS WORK</div>
+          <div style="font-weight:700;color:#c42020">${sm.weak}</div>
+        </div>
+      </div>
+      <button onclick="if(confirm('Reset all progress?')){localStorage.removeItem(\'vidya_progress\');document.getElementById(\'progressPanel\').style.display=\'none\';document.getElementById(\'progressBadge\').style.display=\'none\';}" style="width:100%;margin-top:14px;padding:9px;border-radius:8px;border:1px solid #e8ddd0;background:transparent;color:#9c8878;font-size:12px;cursor:pointer;font-family:inherit">🗑️ Reset Progress</button>
+    </div>`;
+  panel.style.display='flex';
+  panel.style.flexDirection='column';
+}
+
+// Hook into quiz answer submission
+const _origSelectMCQ = typeof selectMCQ==='function' ? selectMCQ : null;
+
 window.addEventListener('DOMContentLoaded',()=>{
   renderRef(); validateS1(); validateS2();
   if(typeof loadSession==='function' && loadSession()){
@@ -3070,33 +3206,56 @@ function askNewDiagram(){
   if(q&&q.trim()) generateDiagram(q.trim());
 }
 async function generateDiagram(query){
-  const p=document.getElementById('diagramCanvas');
   const out=document.getElementById('diagramOutput');
   if(!out) return;
   if(!canvasOpen) toggleCanvas();
+
   out.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:12px;color:#9c8878"><div style="font-size:32px">🎨</div><div style="font-size:13px;font-weight:600">Drawing '+escHtml(query)+'...</div><div style="display:flex;gap:5px"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>';
-  const prompt_text='Draw a detailed labeled diagram of "'+query+'" for Karnataka Class 10 SSLC. Use ASCII art and Unicode box-drawing characters (─│┌┐└┘├┤┬┴┼→←↑↓). Label ALL important parts clearly with arrows. Make it educational, neat, and exam-ready. Put the diagram in a code block. Then list all labeled parts with brief descriptions.';
+
+  const promptText='Draw a detailed labeled diagram of "'+query+'" for Karnataka Class 10 SSLC.\n'+
+    'Use ASCII art with Unicode box-drawing chars (─│┌┐└┘├┤┬┴┼→←↑↓↗↘).\n'+
+    'Label ALL parts clearly with arrows. Make it exam-ready.\n'+
+    'Wrap diagram in a code block (```). After, list labeled parts with descriptions.';
   try{
-    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+CURRENT_MODEL+':generateContent?key='+GEM_KEY,
+    const resp=await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/'+CURRENT_MODEL+':generateContent?key='+GEM_KEY,
       {method:'POST',headers:{'Content-Type':'application/json'},
        body:JSON.stringify({
-         system_instruction:{parts:[{text:'You are an expert at creating clear ASCII/Unicode educational diagrams for Indian school students.'}]},
-         contents:[{role:'user',parts:[{text:prompt_text}]}],
+         system_instruction:{parts:[{text:'You are an expert educational diagram creator for Indian school students. Draw clear, labeled ASCII/Unicode diagrams.'}]},
+         contents:[{role:'user',parts:[{text:promptText}]}],
          generationConfig:{temperature:0.3,maxOutputTokens:1500}
        })
-      });
+      }
+    );
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      throw new Error(err?.error?.message||'HTTP '+resp.status);
+    }
     const data=await resp.json();
-    const diagram=data.candidates?.[0]?.content?.parts?.[0]?.text||'Could not generate diagram. Try again!';
-    out.innerHTML='<div style="padding:14px">'
-      +'<div style="font-size:13px;font-weight:700;color:#1a1207;margin-bottom:8px">📐 '+escHtml(query)+'</div>'
-      +'<div style="font-size:13px;line-height:1.7;color:#3d2e1a;white-space:pre-wrap;font-family:monospace">'+formatMsg(diagram,'bot')+'</div>'
-      +'<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'
-        +'<button onclick="navigator.clipboard.writeText(document.getElementById(\'diagramOutput\').innerText)" style="padding:7px 14px;border-radius:999px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>'
-        +'<button onclick="askNewDiagram()" style="padding:7px 14px;border-radius:999px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎨 New Diagram</button>'
-      +'</div>'
-      +'</div>';
-  }catch(e){out.innerHTML='<div style="padding:16px;color:#c42020;font-size:13px">❌ Could not generate diagram. Try again!</div>';}
+    const diagram=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    if(!diagram) throw new Error('Empty response from AI');
+
+    out.innerHTML=
+      '<div style="padding:14px">'+
+        '<div style="font-size:13px;font-weight:700;color:#1a1207;margin-bottom:8px">📐 '+escHtml(query)+'</div>'+
+        '<div style="font-size:12.5px;line-height:1.7;color:#3d2e1a;white-space:pre-wrap;font-family:monospace;background:#f5f0ea;border-radius:8px;padding:12px;overflow-x:auto">'+formatMsg(diagram,'bot')+'</div>'+
+        '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'+
+          '<button onclick="navigator.clipboard.writeText(document.getElementById(\'diagramOutput\').innerText)" style="padding:7px 14px;border-radius:999px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📋 Copy</button>'+
+          '<button onclick="askNewDiagram()" style="padding:7px 14px;border-radius:999px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎨 New Diagram</button>'+
+        '</div>'+
+      '</div>';
+  }catch(e){
+    out.innerHTML=
+      '<div style="padding:16px">'+
+        '<div style="color:#c42020;font-size:13px;margin-bottom:12px">❌ '+escHtml(e.message||'Could not generate diagram')+'</div>'+
+        '<button onclick="generateDiagram('+JSON.stringify(query)+')" style="padding:8px 16px;border-radius:999px;border:1.5px solid #fecaca;background:#fef2f2;color:#c42020;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🔄 Try Again</button>'+
+      '</div>';
+  }
 }
+
+
+
+
 // ── ADMIN SHORTCUT: CapsLock + Shift + / ─────────────────────────
 document.addEventListener('keydown', function(e){
   // Detect: key is '/' (or '?'), Shift is held, CapsLock is active
@@ -3114,34 +3273,34 @@ document.addEventListener('keydown', function(e){
 
 
 
+
+
+
+
 </script>
 
-<!-- AI DIAGRAM CANVAS — right side panel -->
-<div id="diagramCanvas" style="display:none;position:fixed;top:0;right:0;width:380px;height:100%;z-index:50;flex-direction:column;background:#ffffff;border-left:1.5px solid #e8ddd0;box-shadow:-4px 0 20px rgba(0,0,0,.1)">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e8ddd0;flex-shrink:0;background:#fff">
-    <div style="display:flex;align-items:center;gap:8px">
-      <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#6b2db8,#e8720c);display:flex;align-items:center;justify-content:center;font-size:14px">🎨</div>
-      <span style="font-size:14px;font-weight:700;color:#1a1207">AI Diagram Board</span>
-    </div>
-    <div style="display:flex;gap:6px">
-      <button onclick="askNewDiagram()" style="padding:5px 10px;border-radius:8px;border:1px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✏️ New</button>
-      <button onclick="closeCanvas()" style="padding:5px 10px;border-radius:8px;border:1px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✕</button>
-    </div>
+<!-- PROGRESS PANEL -->
+<div id="progressPanel" style="display:none;position:fixed;top:0;right:0;width:340px;max-width:95vw;height:100%;z-index:55;background:#fff;border-left:1.5px solid #e8ddd0;box-shadow:-4px 0 20px rgba(0,0,0,.12);overflow:hidden"></div>
+
+<!-- AI DIAGRAM CANVAS -->
+<div id="diagramCanvas" style="display:none;position:fixed;top:0;right:0;width:380px;height:100%;z-index:50;flex-direction:column;background:#fff;border-left:1.5px solid #e8ddd0;box-shadow:-4px 0 20px rgba(0,0,0,.1)">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e8ddd0;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#6b2db8,#e8720c);display:flex;align-items:center;justify-content:center;font-size:14px">🎨</div><span style="font-size:14px;font-weight:700;color:#1a1207">AI Diagram Board</span></div>
+    <div style="display:flex;gap:6px"><button onclick="askNewDiagram()" style="padding:5px 10px;border-radius:8px;border:1px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✏️ New</button><button onclick="closeCanvas()" style="padding:5px 10px;border-radius:8px;border:1px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✕</button></div>
   </div>
   <div id="diagramOutput" style="flex:1;overflow-y:auto;padding:0">
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:12px;color:#9c8878;padding:20px;text-align:center">
-      <div style="font-size:48px">🎨</div>
-      <div style="font-size:14px;font-weight:700;color:#1a1207">AI Diagram Board</div>
-      <div style="font-size:13px;color:#9c8878;line-height:1.6">Ask Vidya to draw any diagram<br>and it appears here instantly!</div>
-      <div style="display:flex;flex-direction:column;gap:7px;width:100%;margin-top:8px">
-        <button onclick="generateDiagram('nephron structure')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🔬 Nephron</button>
-        <button onclick="generateDiagram('reflex arc nervous system')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🧠 Reflex Arc</button>
-        <button onclick="generateDiagram('human heart chambers valves')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">❤️ Human Heart</button>
-        <button onclick="generateDiagram('plant cell organelles labeled')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🌱 Plant Cell</button>
-        <button onclick="generateDiagram('series parallel electric circuit')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⚡ Electric Circuit</button>
-        <button onclick="generateDiagram('water cycle evaporation precipitation')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">💧 Water Cycle</button>
-        <button onclick="generateDiagram('triangle BPT similarity theorem')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📐 Triangle / BPT</button>
-        <button onclick="generateDiagram('India physical map rivers mountains')" style="padding:9px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🗺️ India Map</button>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:10px;color:#9c8878;padding:20px;text-align:center">
+      <div style="font-size:40px">🎨</div><div style="font-size:14px;font-weight:700;color:#1a1207">AI Diagram Board</div>
+      <div style="font-size:12px;color:#9c8878;line-height:1.6">Ask Vidya to draw any diagram<br>or pick one below!</div>
+      <div style="display:flex;flex-direction:column;gap:6px;width:100%;margin-top:6px">
+        <button onclick="generateDiagram('nephron structure')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">🔬 Nephron Structure</button>
+        <button onclick="generateDiagram('reflex arc nervous system')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">🧠 Reflex Arc</button>
+        <button onclick="generateDiagram('human heart chambers valves')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">❤️ Human Heart</button>
+        <button onclick="generateDiagram('plant cell organelles')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">🌱 Plant Cell</button>
+        <button onclick="generateDiagram('electric circuit series parallel')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">⚡ Electric Circuit</button>
+        <button onclick="generateDiagram('water cycle evaporation condensation')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">💧 Water Cycle</button>
+        <button onclick="generateDiagram('triangle BPT Thales theorem')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">📐 Triangle / BPT</button>
+        <button onclick="generateDiagram('India rivers mountains physical map')" style="padding:8px;border-radius:8px;border:1.5px solid #e8ddd0;background:#f9f5f0;color:#3d2e1a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left">🗺️ India Map</button>
       </div>
     </div>
   </div>

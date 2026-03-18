@@ -829,125 +829,9 @@ body{
 <!-- Progress panel -->
 <div id="progressPanel"></div>
 
+
 <script>
-// ══════════════════════════════════════════
-//  THEME
-// ══════════════════════════════════════════
-function toggleTheme(){
-  const html=document.documentElement;
-  const isDark=html.getAttribute('data-theme')==='dark';
-  html.setAttribute('data-theme',isDark?'light':'dark');
-  document.getElementById('themeBtn').textContent=isDark?'🌙':'☀️';
-  try{localStorage.setItem('vidya_theme',isDark?'light':'dark');}catch(e){}
-}
-// Restore theme
-(function(){
-  try{
-    const t=localStorage.getItem('vidya_theme')||'light';
-    document.documentElement.setAttribute('data-theme',t);
-    const btn=document.getElementById('themeBtn');
-    if(btn) btn.textContent=t==='dark'?'☀️':'🌙';
-  }catch(e){}
-})();
 
-// ══════════════════════════════════════════
-//  NAME MODAL — first visit only
-// ══════════════════════════════════════════
-function validateNameInput(){
-  const v=document.getElementById('nameInput').value.trim();
-  document.getElementById('nameBtn').disabled=v.length<1;
-}
-function submitName(){
-  const name=document.getElementById('nameInput').value.trim();
-  if(!name) return;
-  STU_NAME=name;
-  try{localStorage.setItem('vidya_name',name);}catch(e){}
-  document.getElementById('nameModal').classList.add('hidden');
-  initApp();
-}
-// Check on load
-function checkName(){
-  try{
-    const saved=localStorage.getItem('vidya_name');
-    if(saved&&saved.trim()){
-      STU_NAME=saved.trim();
-      document.getElementById('nameModal').classList.add('hidden');
-      initApp();
-      return;
-    }
-  }catch(e){}
-  // First time — show modal
-  document.getElementById('nameInput').focus();
-}
-
-// ══════════════════════════════════════════
-//  SUBJECT SWITCHING (left sidebar)
-// ══════════════════════════════════════════
-function switchSubject(s){
-  SUBJECT=s;
-  // Update sidebar
-  document.querySelectorAll('.subject-btn').forEach(b=>{
-    b.classList.toggle('active',b.dataset.s===s);
-  });
-  // Update placeholder
-  const phs={
-    Mathematics:"Try: 'Quiz me on Triangles' or 'Solve x²-5x+6=0'",
-    Science:"Try: 'Explain Ohm\\'s Law' or 'Balance Fe₂O₃ + Al'",
-    'Social Science':"Try: 'Causes of 1857 revolt' or '3 marks: Battle of Plassey'",
-    English:"Try: 'Figures of speech in Sarus Crane' or 'Write a formal letter'",
-    Hindi:'हिंदी के बारे में कुछ भी पूछो…',
-    Kannada:'ಕನ್ನಡದ ಬಗ್ಗೆ ಏನಾದರೂ ಕೇಳಿ…',
-    'All Subjects':'Ask anything about SSLC 2025-26 — Maths, Science, Social, English…',
-  };
-  document.getElementById('chatInput').placeholder=phs[s]||'Ask anything about SSLC 2025-26…';
-  // Save
-  try{localStorage.setItem('vidya_subject',s);}catch(e){}
-  // Notify in chat
-  const icons={Mathematics:'🔢',Science:'🔬','Social Science':'🌍',English:'📖',
-    Hindi:'🇮🇳',Kannada:'🌿',Sanskrit:'🕉️','All Subjects':'🌟'};
-  addBubble('bot',`Switched to ${icons[s]||'📚'} **${s}**! Ask me anything. 💪`);
-}
-
-// ══════════════════════════════════════════
-//  TAB SWITCHING
-// ══════════════════════════════════════════
-function switchTab(t){
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('panel-'+t).classList.add('active');
-  document.getElementById('tab-'+t).classList.add('active');
-}
-
-// ══════════════════════════════════════════
-//  INIT APP — runs after name is known
-// ══════════════════════════════════════════
-function initApp(){
-  // Restore subject
-  try{
-    const s=localStorage.getItem('vidya_subject');
-    if(s){SUBJECT=s;document.querySelectorAll('.subject-btn').forEach(b=>b.classList.toggle('active',b.dataset.s===s));}
-  }catch(e){}
-  // Update topbar
-  const av=document.getElementById('userAvatar');
-  if(av) av.textContent=STU_NAME.charAt(0).toUpperCase();
-  const nm=document.getElementById('tbName');
-  if(nm) nm.textContent=STU_NAME;
-  // Badges
-  updateRequestBadge();
-  updateProgressBadge();
-  // Show badge
-  const rb=document.getElementById('reqBadge');
-  if(rb) rb.style.display='inline-block';
-  // Init voice
-  initVoice();
-  // Welcome message
-  buildWelcome();
-  // Ref tab
-  renderRef();
-  GEM_KEY=getCurrentKey();
-}
-</script>
-<script>
 
 
 
@@ -2993,6 +2877,39 @@ function askNewDiagram(){
   if(q&&q.trim()) generateDiagram(q.trim());
 }
 
+
+function showDiagramLinks(query){
+  const q=query.replace(/diagram|draw|show me|sketch|figure of|structure of|label|of the|of a|please/gi,'').trim();
+  const enc=encodeURIComponent(q+' labeled diagram');
+  const html='<div class="img-links">'
+    +'<a href="https://www.google.com/search?tbm=isch&q='+enc+'" target="_blank" rel="noopener" class="img-link-btn google">🔍 Google Images</a>'
+    +'<a href="https://en.wikipedia.org/wiki/'+encodeURIComponent(q.replace(/ /g,'_'))+'" target="_blank" rel="noopener" class="img-link-btn wiki">📖 Wikipedia</a>'
+    +'<button onclick="generateDiagram('+JSON.stringify(q)+')" class="img-link-btn draw">🎨 AI Draw</button>'
+    +'</div>';
+  const inner=document.getElementById('msgsInner');if(!inner)return;
+  const row=document.createElement('div');row.className='msg-row bot';
+  row.innerHTML='<div class="bot-av">🖼️</div><div class="msg-content"><div class="msg-sender" style="color:var(--muted)">Find diagrams</div>'+html+'</div>';
+  inner.appendChild(row);scrollChat();
+}
+
+
+// ── RESET DAILY COUNT ────────────────────────────────────────
+function resetDailyCount(){
+  try{
+    // Clear all vidya_req_ keys from localStorage
+    Object.keys(localStorage).filter(k=>k.startsWith('vidya_req_')||k.startsWith('vidya_usage_'))
+      .forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
+  updateRequestBadge();
+}
+// One-time reset — remove this after first deploy
+(function(){
+  try{
+    Object.keys(localStorage).filter(k=>k.startsWith('vidya_req_')||k.startsWith('vidya_usage_'))
+      .forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
+})();
+
 window.addEventListener('DOMContentLoaded',()=>{
   renderRef();
   validateS2&&validateS2();
@@ -3150,12 +3067,123 @@ function stopSpeaking(){
 
 // ── ADMIN SHORTCUT: CapsLock + Shift + / ─────────────────────────
 
+// ── UI FUNCTIONS (new design) ──────────────────────
+// ══════════════════════════════════════════
+//  THEME
+// ══════════════════════════════════════════
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  document.getElementById('themeBtn').textContent=isDark?'🌙':'☀️';
+  try{localStorage.setItem('vidya_theme',isDark?'light':'dark');}catch(e){}
+}
+// Restore theme
+(function(){
+  try{
+    const t=localStorage.getItem('vidya_theme')||'light';
+    document.documentElement.setAttribute('data-theme',t);
+    const btn=document.getElementById('themeBtn');
+    if(btn) btn.textContent=t==='dark'?'☀️':'🌙';
+  }catch(e){}
+})();
 
+// ══════════════════════════════════════════
+//  NAME MODAL — first visit only
+// ══════════════════════════════════════════
+function validateNameInput(){
+  const v=document.getElementById('nameInput').value.trim();
+  document.getElementById('nameBtn').disabled=v.length<1;
+}
+function submitName(){
+  const name=document.getElementById('nameInput').value.trim();
+  if(!name) return;
+  STU_NAME=name;
+  try{localStorage.setItem('vidya_name',name);}catch(e){}
+  document.getElementById('nameModal').classList.add('hidden');
+  initApp();
+}
+// Check on load
+function checkName(){
+  try{
+    const saved=localStorage.getItem('vidya_name');
+    if(saved&&saved.trim()){
+      STU_NAME=saved.trim();
+      document.getElementById('nameModal').classList.add('hidden');
+      initApp();
+      return;
+    }
+  }catch(e){}
+  // First time — show modal
+  document.getElementById('nameInput').focus();
+}
 
+// ══════════════════════════════════════════
+//  SUBJECT SWITCHING (left sidebar)
+// ══════════════════════════════════════════
+function switchSubject(s){
+  SUBJECT=s;
+  // Update sidebar
+  document.querySelectorAll('.subject-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.s===s);
+  });
+  // Update placeholder
+  const phs={
+    Mathematics:"Try: 'Quiz me on Triangles' or 'Solve x²-5x+6=0'",
+    Science:"Try: 'Explain Ohm\\'s Law' or 'Balance Fe₂O₃ + Al'",
+    'Social Science':"Try: 'Causes of 1857 revolt' or '3 marks: Battle of Plassey'",
+    English:"Try: 'Figures of speech in Sarus Crane' or 'Write a formal letter'",
+    Hindi:'हिंदी के बारे में कुछ भी पूछो…',
+    Kannada:'ಕನ್ನಡದ ಬಗ್ಗೆ ಏನಾದರೂ ಕೇಳಿ…',
+    'All Subjects':'Ask anything about SSLC 2025-26 — Maths, Science, Social, English…',
+  };
+  document.getElementById('chatInput').placeholder=phs[s]||'Ask anything about SSLC 2025-26…';
+  // Save
+  try{localStorage.setItem('vidya_subject',s);}catch(e){}
+  // Notify in chat
+  const icons={Mathematics:'🔢',Science:'🔬','Social Science':'🌍',English:'📖',
+    Hindi:'🇮🇳',Kannada:'🌿',Sanskrit:'🕉️','All Subjects':'🌟'};
+  addBubble('bot',`Switched to ${icons[s]||'📚'} **${s}**! Ask me anything. 💪`);
+}
 
+// ══════════════════════════════════════════
+//  TAB SWITCHING
+// ══════════════════════════════════════════
+function switchTab(t){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+}
 
-
-
+// ══════════════════════════════════════════
+//  INIT APP — runs after name is known
+// ══════════════════════════════════════════
+function initApp(){
+  // Restore subject
+  try{
+    const s=localStorage.getItem('vidya_subject');
+    if(s){SUBJECT=s;document.querySelectorAll('.subject-btn').forEach(b=>b.classList.toggle('active',b.dataset.s===s));}
+  }catch(e){}
+  // Update topbar
+  const av=document.getElementById('userAvatar');
+  if(av) av.textContent=STU_NAME.charAt(0).toUpperCase();
+  const nm=document.getElementById('tbName');
+  if(nm) nm.textContent=STU_NAME;
+  // Badges
+  updateRequestBadge();
+  updateProgressBadge();
+  // Show badge
+  const rb=document.getElementById('reqBadge');
+  if(rb) rb.style.display='inline-block';
+  // Init voice
+  initVoice();
+  // Welcome message
+  buildWelcome();
+  // Ref tab
+  renderRef();
+  GEM_KEY=getCurrentKey();
+}
 </script>
 </body>
 </html>

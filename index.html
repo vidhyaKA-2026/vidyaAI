@@ -2238,36 +2238,34 @@ function resetDailyCount(){
 // ── CORE RENDERING FUNCTIONS ─────────────────────────────────
 
 
-function formatMsg(txt, role){
+function formatMsg(txt,role){
   if(role==='user') return escHtml(txt);
   let h=String(txt);
+  // Escape HTML first
   h=h.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   // Code blocks
-  h=h.replace(/```([\s\S]*?)```/g,(_,c)=>'<pre>'+c.trim()+'</pre>');
-  // Inline code
-  h=h.replace(/`([^`
-]+)`/g,'<code>$1</code>');
-  // Bold
-  h=h.replace(/\*\*(.+?)\*\*/gs,'<strong>$1</strong>');
-  // Italic
-  h=h.replace(/\*([^*
-]+?)\*/g,'<em>$1</em>');
+  h=h.replace(/```([\s\S]*?)```/g,function(_,c){return '<pre>'+c.trim()+'</pre>';});
+  // Inline code - use split approach to avoid backtick regex issues
+  h=h.replace(/`([^`\n]+)`/g,'<code>$1</code>');
+  // Bold (**text**)
+  h=h.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  // Italic (*text*)
+  h=h.replace(/\*([^*\n]+)\*/g,'<em>$1</em>');
   // Headers
-  h=h.replace(/^### (.+)$/gm,'<div style="font-size:13px;font-weight:800;color:var(--saffron);margin:10px 0 4px;text-transform:uppercase">$1</div>');
-  h=h.replace(/^## (.+)$/gm,'<div style="font-size:15px;font-weight:900;color:var(--ink);margin:12px 0 5px">$1</div>');
-  h=h.replace(/^# (.+)$/gm,'<div style="font-size:16px;font-weight:900;color:var(--ink);margin:12px 0 6px">$1</div>');
+  h=h.replace(/^#{3} (.+)$/gm,'<div style="font-size:13px;font-weight:800;color:var(--saffron);margin:10px 0 4px;text-transform:uppercase">$1</div>');
+  h=h.replace(/^#{2} (.+)$/gm,'<div style="font-size:15px;font-weight:900;color:var(--ink);margin:12px 0 5px">$1</div>');
+  h=h.replace(/^#{1} (.+)$/gm,'<div style="font-size:16px;font-weight:900;color:var(--ink);margin:12px 0 6px">$1</div>');
   // HR
-  h=h.replace(/^---+$/gm,'<hr>');
+  h=h.replace(/^-{3,}$/gm,'<hr style="border:none;border-top:1px solid var(--border);margin:10px 0">');
   // Bullets
-  h=h.replace(/^[\-•] (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0"><span style="color:var(--saffron);flex-shrink:0">•</span><span>$1</span></div>');
+  h=h.replace(/^[\-\u2022] (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0"><span style="color:var(--saffron);flex-shrink:0">\u2022</span><span>$1</span></div>');
   // Numbered list
   h=h.replace(/^(\d+)\. (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0"><span style="background:var(--saffron-l);color:var(--saffron);font-weight:800;min-width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">$1</span><span>$2</span></div>');
   // Checkmarks
-  h=h.replace(/^✅ (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0;color:var(--green)"><span>✅</span><span>$1</span></div>');
-  h=h.replace(/^❌ (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0;color:var(--red)"><span>❌</span><span>$1</span></div>');
-  // Newlines
-  h=h.replace(/
-/g,'<br>');
+  h=h.replace(/^\u2705 (.+)$/gm,'<div style="color:var(--green);display:flex;gap:6px">\u2705 <span>$1</span></div>');
+  h=h.replace(/^\u274c (.+)$/gm,'<div style="color:var(--red);display:flex;gap:6px">\u274c <span>$1</span></div>');
+  // Newlines to <br>
+  h=h.replace(/\n/g,'<br>');
   return h;
 }
 
@@ -2299,36 +2297,35 @@ function addBubble(role, text){
   if(role==='bot' && AUTO_SPEAK && typeof speakText==='function') speakText(text);
 }
 
-function renderQuizMessage(text, inner){
-  const hasMCQ=/
-A\)/.test(text)||/
-\(A\)/.test(text);
-  const hasQNum=(text.match(/Q\s*\d+:/gim)||[]).length>=1;
+function renderQuizMessage(text,inner){
+  const hasMCQ=text.includes('\nA)')||text.includes('\n(A)');
+  const qMatches=text.match(/Q\s*\d+:/gim)||[];
+  const hasQNum=qMatches.length>=1;
   if(!hasMCQ&&!hasQNum) return false;
   const questions=parseQuizQuestions(text);
   if(!questions.length) return false;
   if(questions[0].preText&&questions[0].preText.trim()){
     const pr=document.createElement('div');pr.className='msg-row bot';
-    pr.innerHTML='<div class="bot-av">🤖</div><div class="msg-content"><div class="msg-sender">Vidya</div><div class="msg-text">'+formatMsg(questions[0].preText,'bot')+'</div></div>';
+    pr.innerHTML='<div class="bot-av">\ud83e\udd16</div><div class="msg-content"><div class="msg-sender">Vidya</div><div class="msg-text">'+formatMsg(questions[0].preText,'bot')+'</div></div>';
     inner.appendChild(pr);
   }
-  questions.forEach((q,idx)=>{
+  questions.forEach(function(q,qi){
     const row=document.createElement('div');row.className='msg-row bot';
     const cid='qcard_'+(++_qcardId);
     let c='<div class="quiz-card active" id="'+cid+'">';
-    c+='<div class="quiz-qnum">Q'+(idx+1)+(q.chapter?' · '+escHtml(q.chapter):'')+(q.marks?' · '+escHtml(q.marks):'')+'</div>';
+    c+='<div class="quiz-qnum">Q'+(qi+1)+(q.chapter?' \u00b7 '+escHtml(q.chapter):'')+(q.marks?' \u00b7 '+escHtml(q.marks):'')+'</div>';
     c+='<div class="quiz-qtext">'+formatMsg(q.question,'bot')+'</div>';
     if(q.options&&q.options.length){
       c+='<div class="quiz-options">';
-      q.options.forEach(opt=>{
-        c+='<button class="quiz-opt" data-letter="'+escHtml(opt.letter)+'" data-text="'+escHtml(opt.text)+'" onclick="selectMCQ(''+cid+'',''+opt.letter+'','')"><span class="opt-letter">'+escHtml(opt.letter)+'</span>'+escHtml(opt.text)+'</button>';
+      q.options.forEach(function(opt){
+        c+='<button class="quiz-opt" data-letter="'+escHtml(opt.letter)+'" data-text="'+escHtml(opt.text)+'" onclick="selectMCQ(\''+cid+'\',\''+opt.letter+'\',\'\')"><span class="opt-letter">'+escHtml(opt.letter)+'</span>'+escHtml(opt.text)+'</button>';
       });
       c+='</div>';
     } else {
-      c+='<div class="quiz-write-wrap"><textarea class="quiz-write" placeholder="Write your answer…" rows="3" onkeydown="if(event.ctrlKey&&event.key==='Enter'){event.preventDefault();submitQuizAnswer(''+cid+'',this.value)}"></textarea><button class="quiz-submit" onclick="submitQuizAnswer(''+cid+'',document.getElementById(''+cid+'').querySelector('.quiz-write').value)">Submit ↑</button></div>';
+      c+='<div class="quiz-write-wrap"><textarea class="quiz-write" placeholder="Write your answer\u2026" rows="3"></textarea><button class="quiz-submit" onclick="submitQuizAnswer(\''+cid+'\',document.getElementById(\''+cid+'\').querySelector(\'.quiz-write\').value)">Submit \u2191</button></div>';
     }
     c+='</div>';
-    row.innerHTML='<div class="bot-av">🤖</div><div class="msg-content"><div class="msg-sender">Vidya — Quiz</div>'+c+'</div>';
+    row.innerHTML='<div class="bot-av">\ud83e\udd16</div><div class="msg-content"><div class="msg-sender">Vidya \u2014 Quiz</div>'+c+'</div>';
     inner.appendChild(row);
   });
   return true;
@@ -2337,23 +2334,26 @@ A\)/.test(text)||/
 let _qcardId=0;
 
 function parseQuizQuestions(text){
-  const lines=text.split('\n'),questions=[];
+  const lines=text.split('\n');
+  const questions=[];
   let current=null,preText='',state='pre';
-  const isQ=l=>/^Q\s*\d+:/i.test(l.trim());
-  const isOpt=l=>/^\s*[A-D]\)\s/.test(l);
-  for(let i=0;i<lines.length;i++){
-    const l=lines[i];
+  function isQ(l){return /^Q\s*\d+:/i.test(l.trim());}
+  function isOpt(l){return /^\s*[A-D]\)\s/.test(l);}
+  function optLetter(l){var m=l.trim().match(/^([A-D])\)/);return m?m[1]:'?';}
+  function optText(l){return l.trim().replace(/^[A-D]\)\s*/,'').trim();}
+  for(var i=0;i<lines.length;i++){
+    var l=lines[i];
     if(isQ(l)){
       if(current) questions.push(current);
-      const chM=l.match(/Chapter:?\s*([^|\n]+)/i);
-      const mM=l.match(/(\d+)\s*marks?/i);
-      current={question:l.replace(/^Q\s*\d+:\s*/i,'').trim(),options:[],chapter:chM?chM[1].trim():null,marks:mM?mM[1]+' marks':null,preText:questions.length===0?preText:''};
+      var chM=l.match(/Chapter:?\s*([^|\n]+)/i);
+      var mM=l.match(/(\d+)\s*marks?/i);
+      current={question:l.replace(/^Q\s*\d+:\s*/i,'').trim(),options:[],
+        chapter:chM?chM[1].trim():null,marks:mM?mM[1]+' marks':null,
+        preText:questions.length===0?preText:''};
       state='question';
-    } else if(state==='question'&&isOpt(l)){
+    } else if((state==='question'||state==='options')&&isOpt(l)){
       state='options';
-      current.options.push({letter:(l.trim().match(/^([A-D])\)/)||['','?'])[1],text:l.trim().replace(/^[A-D]\)\s*/,'').trim()});
-    } else if(state==='options'&&isOpt(l)){
-      current.options.push({letter:(l.trim().match(/^([A-D])\)/)||['','?'])[1],text:l.trim().replace(/^[A-D]\)\s*/,'').trim()});
+      if(current) current.options.push({letter:optLetter(l),text:optText(l)});
     } else if(state==='question'&&current&&l.trim()){
       current.question+='\n'+l;
     } else if(state==='pre'){

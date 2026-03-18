@@ -966,7 +966,7 @@ const KEYS=[
   ['AIzaSyCqlwgeb','S4E7xdmd8e-xr','GV5_rqSE0YfRk'],
   ['AIzaSyDd1L8u7','ex_hkXribhBCB','yb76JbWFBxIpc'],
 ].map(k=>k[0]+k[1]+k[2]);
-const CURRENT_MODEL='gemini-2.0-flash-lite';
+const CURRENT_MODEL='gemini-1.5-flash';
 const USER_DAILY_LIMIT=20;
 let _keyIdx=0;
 function getCurrentKey(){return KEYS[_keyIdx];}
@@ -978,7 +978,7 @@ let _abortCtrl=null, _lastUserMsg=null, _fingerprint=null;
 let loading=false, history=[], uploadedFile=null, uploadedDataUrl=null, uploadedMimeType=null;
 
 // ── MODEL & RATE LIMITING ─────────────────────────────────────────
- // switch to 'gemini-2.5-flash' to enable per-user limit
+ // switch to 'gemini-1.5-flash' to enable per-user limit
 
 
 // Browser fingerprint — harder to bypass than name-based
@@ -998,12 +998,7 @@ let loading=false, history=[], uploadedFile=null, uploadedDataUrl=null, uploaded
 
 
 // ── PER-USER DAILY LIMIT ─────────────────────────────────────────
-const DAILY_LIMIT = 20; // requests per student per day — change as needed
 
-function getUsageKey(){ return 'vidya_usage_' + new Date().toISOString().slice(0,10); }
-function getUsageCount(){ return parseInt(localStorage.getItem(getUsageKey())||'0'); }
-function incrementUsage(){ localStorage.setItem(getUsageKey(), getUsageCount()+1); }
-function isLimitReached(){ return getUsageCount() >= DAILY_LIMIT; }
 function getRemainingRequests(){ return Math.max(0, DAILY_LIMIT - getUsageCount()); }
 // ─────────────────────────────────────────────────────────────────
 
@@ -1328,6 +1323,7 @@ function resizeTA(el){ el.style.height='auto'; el.style.height=Math.min(el.scrol
 function updateSend(){
   const v=document.getElementById('chatInput').value.trim();
   const hasFile=!!uploadedDataUrl;
+  const btn=document.getElementById('sendBtn');
   if(!btn) return;
   if(loading){
     btn.className='send-btn stop';
@@ -1354,53 +1350,36 @@ function stopGeneration(){
 
 async function sendMsg(retryMsg){
   const ta=document.getElementById('chatInput');
-  const txt = retryMsg || ta.value.trim();
-  if((!txt && !uploadedDataUrl && !retryMsg)||loading)return;
-  // Check per-user rate limit (only for Gemini models)
-  if(!retryMsg){ // don't count retries
+  const txt=retryMsg||ta.value.trim();
+  // Guard: no message, no file, or already loading
+  if((!txt&&!uploadedDataUrl&&!retryMsg)||loading) return;
+
+  // Rate limit — only on fresh messages, not retries
+  if(!retryMsg){
     if(!checkRateLimit()) return;
+    _lastUserMsg=txt;
     incrementUserRequestCount();
     updateRequestBadge();
   }
 
-  // Check daily limit
-  if(isLimitReached()){
-    addBubble('bot', '📚 You have used all ' + DAILY_LIMIT + ' questions for today! Come back tomorrow for more. 😊\n\nTip: Use the 📐 Formulas & Notes tab for revision — no limit there!');
-    return;
-  }
+  // Show user bubble
+  const displayTxt=txt||(uploadedDataUrl?'(File attached)':'');
+  const hasFile=!!uploadedDataUrl;
+  if(!retryMsg) addBubble('user', displayTxt+(hasFile?'\n📎 [File attached]':''));
 
-  // Build display text for user bubble
-  const displayTxt = txt || '(See uploaded file)';
-
-  // Show user message
-  if(!retryMsg) _lastUserMsg = txt; // save for quota retry
-  if(!retryMsg) addBubble('user', displayTxt + (hasFile ? '\n📎 [File attached]' : ''));
-
-  // Build parts for the API call
-  const userParts = [];
+  // Build API parts
+  const userParts=[];
   if(hasFile){
-    // Extract base64 data from dataURL
-    const base64Data = uploadedDataUrl.split(',')[1];
-    const mimeType = uploadedMimeType || 'image/jpeg';
-    if(mimeType === 'application/pdf'){
-      userParts.push({
-        inlineData:{ mimeType:'application/pdf', data:base64Data }
-      });
-    } else {
-      userParts.push({
-        inlineData:{ mimeType:mimeType, data:base64Data }
-      });
-    }
+    const base64Data=uploadedDataUrl.split(',')[1];
+    const mimeType=uploadedMimeType||'image/jpeg';
+    userParts.push({inlineData:{mimeType,data:base64Data}});
   }
   if(txt){
-    userParts.push({text: txt + (hasFile ? '\n\n[I have also uploaded a file — please read it carefully and help me understand/use it for SSLC 2025-26 Class 10 Karnataka Board preparation.]' : '')});
+    userParts.push({text:txt+(hasFile?'\n\n[File uploaded — analyse for SSLC 2025-26 Karnataka Board.]':'')});
   } else if(hasFile){
-    userParts.push({text:'I have uploaded a question paper / blueprint / study material. Please analyze it carefully for SSLC 2025-26 Class 10 Karnataka Board. Tell me:\n1. What type of document is this?\n2. What subjects/chapters does it cover?\n3. What are the key questions or marks distribution?\n4. How should I use this to study better?'});
+    userParts.push({text:'Analyse this file for SSLC 2025-26 Class 10 Karnataka Board. What type of document is this? What are the key topics or questions?'});
   }
-
-  if(!retryMsg) history.push({role:'user', parts:userParts});
-
-  // Clear the file after attaching to message
+  if(!retryMsg) history.push({role:'user',parts:userParts});
   if(hasFile) clearUpload();
 
   ta.value=''; ta.style.height='auto'; updateSend();
@@ -1409,68 +1388,58 @@ async function sendMsg(retryMsg){
 
   try{
     _abortCtrl=new AbortController();
-  const resp=await fetch(
+    const resp=await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent?key=${GEM_KEY}`,
       {method:'POST',headers:{'Content-Type':'application/json'},signal:_abortCtrl.signal,
        body:JSON.stringify({
          system_instruction:{parts:[{text:sysPrompt()}]},
          contents:history,
-         generationConfig:{temperature:0.5,maxOutputTokens:500},thinkingConfig:{thinkingBudget:0}
+         generationConfig:{temperature:0.5,maxOutputTokens:500},
+         thinkingConfig:{thinkingBudget:0}
        })}
     );
     hideTyping(tid);
     if(!resp.ok){
-      let eBody = {};
-      try{ eBody = await resp.json(); }catch(pe){}
-      throw new Error(eBody?.error?.message || eBody?.error?.status || 'HTTP '+resp.status);
+      let eBody={};
+      try{eBody=await resp.json();}catch(pe){}
+      throw new Error(eBody?.error?.message||eBody?.error?.status||'HTTP '+resp.status);
     }
     const d=await resp.json();
-    const reply=d.candidates?.[0]?.content?.parts?.[0]?.text||"Hmm, I couldn't get a response. Try again!";
+    const reply=d.candidates?.[0]?.content?.parts?.[0]?.text||"I couldn't get a response. Try again!";
     history.push({role:'model',parts:[{text:reply}]});
     addBubble('bot',reply);
     if(isDiagramRequest(txt||_lastUserMsg||'')) showDiagramLinks((txt||_lastUserMsg||'')+' '+SUBJECT);
     saveSession();
-    incrementUsage();
-    // Show remaining count every 5 requests
-    if(rem <= 5 && rem > 0){
-      setTimeout(()=> addBubble('bot', '💡 You have **' + rem + ' questions** left for today. Use them wisely! 😊'), 500);
-    }
   }catch(err){
     hideTyping(tid);
-    const msg = err.message || '';
-    // Only pop history if NOT retrying (quota rotation retries)
+    const msg=err.message||'';
     const isAbort=err.name==='AbortError'||msg.toLowerCase().includes('abort');
-    if(isAbort){loading=false;updateSend();hideTyping(tid);return;}
-    const isQuotaErr=msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('429');
-    if(!isQuotaErr&&!isAbort) history.pop();
-    let friendly = '';
-    if(msg.includes('API_KEY_INVALID') || msg.includes('invalid') || msg.includes('API key'))
-      friendly = "🔑 There's a problem with the app's API key. Please let your teacher know!";
-    else if(msg.includes('leaked') || msg.includes('reported'))
-      friendly = "🔑 The app's API key needs to be updated. Please inform your teacher!";
-    else if(msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429')){
-      // Auto-rotate to next key and retry silently
+    if(isAbort){
+      Object.keys(_typingTimers||{}).forEach(id=>{
+        clearInterval(_typingTimers[id]);delete _typingTimers[id];
+        const el=document.getElementById(id);if(el)el.remove();
+      });
+      loading=false;updateSend();return;
+    }
+    const isQuota=msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('429');
+    if(!isQuota) history.pop();
+    let friendly='';
+    if(msg.includes('API_KEY_INVALID')||msg.includes('API key'))
+      friendly="🔑 API key problem. Please contact your teacher!";
+    else if(isQuota){
       if(KEYS.length>1){
         GEM_KEY=getNextKey();loading=false;
         if(_lastUserMsg) setTimeout(()=>sendMsg(_lastUserMsg),800);
         return;
-      } else {
-        friendly = "⏳ Too many requests right now! Please wait a minute and try again 😊";
-      }
+      } else friendly="⏳ Too many requests! Wait a minute and try again 😊";
     }
-    else if(msg.includes('SAFETY') || msg.includes('safety'))
-      friendly = "🛡️ That question was blocked by the safety filter. Try rephrasing it!";
-    else if(msg.includes('fetch') || msg.includes('network') || msg.includes('Failed to fetch'))
-      friendly = "🌐 No internet connection. Please check your WiFi and try again!";
-    else if(msg.includes('503') || msg.includes('overloaded') || msg.includes('unavailable'))
-      friendly = "😴 The AI is a bit overloaded right now. Try again in a moment!";
-    else if(msg.includes('400'))
-      friendly = "🤔 Something went wrong with that request. Try asking differently!";
-    else if(msg.includes('404') || msg.includes('not found'))
-      friendly = "🔧 Model not available. Please let your teacher know!";
+    else if(msg.includes('SAFETY')||msg.includes('safety'))
+      friendly="🛡️ That was blocked by the safety filter. Try rephrasing!";
+    else if(msg.includes('fetch')||msg.includes('Failed to fetch'))
+      friendly="🌐 No internet connection. Check your WiFi!";
     else
-      friendly = "😕 Something went wrong (" + msg.slice(0,60) + "). Please try again!";
-    addBubble('bot', friendly);
+      friendly="😕 Something went wrong. Please try again!";
+    if(friendly) addBubble('bot',friendly);
   }
   loading=false; updateSend();
 }
@@ -2993,7 +2962,7 @@ async function generateDiagram(query){
   out.innerHTML='<div class="canvas-loading"><div style="font-size:28px">🎨</div><div style="font-size:13px;font-weight:600">Drawing '+escHtml(query)+'...</div><div style="display:flex;gap:5px"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>';
   const prompt='Draw a detailed labeled diagram of "'+query+'" for Karnataka Class 10 SSLC. Use ASCII art and Unicode box-drawing characters. Label ALL parts with arrows. Put diagram in a code block. Then list parts with descriptions.';
   try{
-    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+CURRENT_MODEL+':generateContent?key='+GEM_KEY,
+    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+GEM_KEY,
       {method:'POST',headers:{'Content-Type':'application/json'},
        body:JSON.stringify({
          system_instruction:{parts:[{text:'You draw clear ASCII/Unicode educational diagrams for Indian students.'}]},

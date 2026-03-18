@@ -1354,12 +1354,10 @@ async function sendMsg(retryMsg){
   // Guard: no message, no file, or already loading
   if((!txt&&!uploadedDataUrl&&!retryMsg)||loading) return;
 
-  // Rate limit — only on fresh messages, not retries
+  // Rate limit check — only on fresh messages
   if(!retryMsg){
     if(!checkRateLimit()) return;
     _lastUserMsg=txt;
-    incrementUserRequestCount();
-    updateRequestBadge();
   }
 
   // Show user bubble
@@ -1394,8 +1392,7 @@ async function sendMsg(retryMsg){
        body:JSON.stringify({
          system_instruction:{parts:[{text:sysPrompt()}]},
          contents:history,
-         generationConfig:{temperature:0.5,maxOutputTokens:500},
-         thinkingConfig:{thinkingBudget:0}
+         generationConfig:{temperature:0.5,maxOutputTokens:600}
        })}
     );
     hideTyping(tid);
@@ -1408,6 +1405,8 @@ async function sendMsg(retryMsg){
     const reply=d.candidates?.[0]?.content?.parts?.[0]?.text||"I couldn't get a response. Try again!";
     history.push({role:'model',parts:[{text:reply}]});
     addBubble('bot',reply);
+    // Only count after successful response
+    if(!retryMsg){ incrementUserRequestCount(); updateRequestBadge(); }
     if(isDiagramRequest(txt||_lastUserMsg||'')) showDiagramLinks((txt||_lastUserMsg||'')+' '+SUBJECT);
     saveSession();
   }catch(err){

@@ -601,7 +601,7 @@ body{
 <!-- ══════════════════════════════════════════
      NAME MODAL — shown only on first visit
 ══════════════════════════════════════════ -->
-<div id="nameModal">
+<div id="nameModal" style="display:none">
   <div class="modal-card">
     <div class="modal-logo">🎓</div>
     <div class="modal-title">Welcome to Vidya</div>
@@ -883,19 +883,6 @@ let loading=false, history=[], uploadedFile=null, uploadedDataUrl=null, uploaded
 
 // ── PER-USER DAILY LIMIT ─────────────────────────────────────────
 
-function getRemainingRequests(){ return Math.max(0, DAILY_LIMIT - getUsageCount()); }
-// ─────────────────────────────────────────────────────────────────
-
-
-
-function toggleAutoSpeak(){
-  AUTO_SPEAK = !AUTO_SPEAK;
-  const btn = document.getElementById('speakToggleBtn');
-  if(btn){
-    AUTO_SPEAK?btn.classList.add('active'):btn.classList.remove('active');
-  }
-  if(!AUTO_SPEAK) stopSpeaking();
-}
 
 
 
@@ -1417,8 +1404,11 @@ function hideTyping(id){
 function scrollChat(){const m=document.getElementById('chatMessages');m.scrollTop=m.scrollHeight;}
 function escHtml(t){
   return String(t)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/\n/g,'<br>');
 }
 
 /* ══════════════════════════════════════════
@@ -2244,6 +2234,177 @@ function resetDailyCount(){
   }catch(e){}
 })();
 
+
+// ── CORE RENDERING FUNCTIONS ─────────────────────────────────
+
+
+function formatMsg(txt, role){
+  if(role==='user') return escHtml(txt);
+  let h=String(txt);
+  h=h.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // Code blocks
+  h=h.replace(/```([\s\S]*?)```/g,(_,c)=>'<pre>'+c.trim()+'</pre>');
+  // Inline code
+  h=h.replace(/`([^`
+]+)`/g,'<code>$1</code>');
+  // Bold
+  h=h.replace(/\*\*(.+?)\*\*/gs,'<strong>$1</strong>');
+  // Italic
+  h=h.replace(/\*([^*
+]+?)\*/g,'<em>$1</em>');
+  // Headers
+  h=h.replace(/^### (.+)$/gm,'<div style="font-size:13px;font-weight:800;color:var(--saffron);margin:10px 0 4px;text-transform:uppercase">$1</div>');
+  h=h.replace(/^## (.+)$/gm,'<div style="font-size:15px;font-weight:900;color:var(--ink);margin:12px 0 5px">$1</div>');
+  h=h.replace(/^# (.+)$/gm,'<div style="font-size:16px;font-weight:900;color:var(--ink);margin:12px 0 6px">$1</div>');
+  // HR
+  h=h.replace(/^---+$/gm,'<hr>');
+  // Bullets
+  h=h.replace(/^[\-•] (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0"><span style="color:var(--saffron);flex-shrink:0">•</span><span>$1</span></div>');
+  // Numbered list
+  h=h.replace(/^(\d+)\. (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0"><span style="background:var(--saffron-l);color:var(--saffron);font-weight:800;min-width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">$1</span><span>$2</span></div>');
+  // Checkmarks
+  h=h.replace(/^✅ (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0;color:var(--green)"><span>✅</span><span>$1</span></div>');
+  h=h.replace(/^❌ (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0;color:var(--red)"><span>❌</span><span>$1</span></div>');
+  // Newlines
+  h=h.replace(/
+/g,'<br>');
+  return h;
+}
+
+function addBubble(role, text){
+  const inner=document.getElementById('msgsInner');
+  if(!inner) return;
+  if(role==='bot' && MODE==='quiz'){
+    const rendered=renderQuizMessage(text, inner);
+    if(rendered){scrollChat();return;}
+  }
+  const row=document.createElement('div');
+  row.className='msg-row '+role;
+  if(role==='bot'){
+    row.innerHTML=
+      '<div class="bot-av">🤖</div>'+
+      '<div class="msg-content">'+
+        '<div class="msg-sender">Vidya</div>'+
+        '<div class="msg-text">'+formatMsg(text,'bot')+'</div>'+
+        '<div class="msg-actions">'+
+          '<button class="msg-action-btn" onclick="navigator.clipboard.writeText(this.closest(\'.msg-content\').querySelector(\'.msg-text\').innerText)">📋 Copy</button>'+
+          '<button class="msg-action-btn" onclick="speakText(this.closest(\'.msg-content\').querySelector(\'.msg-text\').innerText)">🔊 Speak</button>'+
+        '</div>'+
+      '</div>';
+  } else {
+    row.innerHTML='<div class="user-msg-wrap"><div class="user-bubble">'+escHtml(text)+'</div></div>';
+  }
+  inner.appendChild(row);
+  scrollChat();
+  if(role==='bot' && AUTO_SPEAK && typeof speakText==='function') speakText(text);
+}
+
+function renderQuizMessage(text, inner){
+  const hasMCQ=/
+A\)/.test(text)||/
+\(A\)/.test(text);
+  const hasQNum=(text.match(/Q\s*\d+:/gim)||[]).length>=1;
+  if(!hasMCQ&&!hasQNum) return false;
+  const questions=parseQuizQuestions(text);
+  if(!questions.length) return false;
+  if(questions[0].preText&&questions[0].preText.trim()){
+    const pr=document.createElement('div');pr.className='msg-row bot';
+    pr.innerHTML='<div class="bot-av">🤖</div><div class="msg-content"><div class="msg-sender">Vidya</div><div class="msg-text">'+formatMsg(questions[0].preText,'bot')+'</div></div>';
+    inner.appendChild(pr);
+  }
+  questions.forEach((q,idx)=>{
+    const row=document.createElement('div');row.className='msg-row bot';
+    const cid='qcard_'+(++_qcardId);
+    let c='<div class="quiz-card active" id="'+cid+'">';
+    c+='<div class="quiz-qnum">Q'+(idx+1)+(q.chapter?' · '+escHtml(q.chapter):'')+(q.marks?' · '+escHtml(q.marks):'')+'</div>';
+    c+='<div class="quiz-qtext">'+formatMsg(q.question,'bot')+'</div>';
+    if(q.options&&q.options.length){
+      c+='<div class="quiz-options">';
+      q.options.forEach(opt=>{
+        c+='<button class="quiz-opt" data-letter="'+escHtml(opt.letter)+'" data-text="'+escHtml(opt.text)+'" onclick="selectMCQ(''+cid+'',''+opt.letter+'','')"><span class="opt-letter">'+escHtml(opt.letter)+'</span>'+escHtml(opt.text)+'</button>';
+      });
+      c+='</div>';
+    } else {
+      c+='<div class="quiz-write-wrap"><textarea class="quiz-write" placeholder="Write your answer…" rows="3" onkeydown="if(event.ctrlKey&&event.key==='Enter'){event.preventDefault();submitQuizAnswer(''+cid+'',this.value)}"></textarea><button class="quiz-submit" onclick="submitQuizAnswer(''+cid+'',document.getElementById(''+cid+'').querySelector('.quiz-write').value)">Submit ↑</button></div>';
+    }
+    c+='</div>';
+    row.innerHTML='<div class="bot-av">🤖</div><div class="msg-content"><div class="msg-sender">Vidya — Quiz</div>'+c+'</div>';
+    inner.appendChild(row);
+  });
+  return true;
+}
+
+let _qcardId=0;
+
+function parseQuizQuestions(text){
+  const lines=text.split('\n'),questions=[];
+  let current=null,preText='',state='pre';
+  const isQ=l=>/^Q\s*\d+:/i.test(l.trim());
+  const isOpt=l=>/^\s*[A-D]\)\s/.test(l);
+  for(let i=0;i<lines.length;i++){
+    const l=lines[i];
+    if(isQ(l)){
+      if(current) questions.push(current);
+      const chM=l.match(/Chapter:?\s*([^|\n]+)/i);
+      const mM=l.match(/(\d+)\s*marks?/i);
+      current={question:l.replace(/^Q\s*\d+:\s*/i,'').trim(),options:[],chapter:chM?chM[1].trim():null,marks:mM?mM[1]+' marks':null,preText:questions.length===0?preText:''};
+      state='question';
+    } else if(state==='question'&&isOpt(l)){
+      state='options';
+      current.options.push({letter:(l.trim().match(/^([A-D])\)/)||['','?'])[1],text:l.trim().replace(/^[A-D]\)\s*/,'').trim()});
+    } else if(state==='options'&&isOpt(l)){
+      current.options.push({letter:(l.trim().match(/^([A-D])\)/)||['','?'])[1],text:l.trim().replace(/^[A-D]\)\s*/,'').trim()});
+    } else if(state==='question'&&current&&l.trim()){
+      current.question+='\n'+l;
+    } else if(state==='pre'){
+      preText+=l+'\n';
+    }
+  }
+  if(current) questions.push(current);
+  return questions;
+}
+
+function submitQuizAnswer(cardId, answerText){
+  const card=document.getElementById(cardId);if(!card)return;
+  const textarea=card.querySelector('.quiz-write');
+  const submitBtn=card.querySelector('.quiz-submit');
+  const answer=answerText||(textarea&&textarea.value.trim())||'';
+  if(!answer)return;
+  if(textarea)textarea.disabled=true;
+  if(submitBtn)submitBtn.disabled=true;
+  card.classList.remove('active');card.classList.add('answered');
+  addBubble('user',answer);
+  history.push({role:'user',parts:[{text:answer}]});
+  const qtext=card.querySelector('.quiz-qtext').innerText;
+  const evalPrompt='My answer to "'+qtext+'" is: '+answer;
+  const tid=showTyping();loading=true;
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/'+CURRENT_MODEL+':generateContent?key='+GEM_KEY,
+    {method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({system_instruction:{parts:[{text:sysPrompt()}]},contents:[...history,{role:'user',parts:[{text:evalPrompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:600}})
+    }).then(r=>r.json()).then(d=>{
+      hideTyping(tid);loading=false;
+      const reply=d.candidates?.[0]?.content?.parts?.[0]?.text||'Could not evaluate. Try again!';
+      history.push({role:'model',parts:[{text:reply}]});
+      addBubble('bot',reply);
+    }).catch(err=>{hideTyping(tid);loading=false;addBubble('bot','😕 Could not evaluate. Try again!');});
+}
+
+function selectMCQ(cardId, chosen, correct){
+  const card=document.getElementById(cardId);if(!card)return;
+  const opts=card.querySelectorAll('.quiz-opt');
+  opts.forEach(o=>{
+    o.disabled=true;
+    const letter=o.dataset.letter;
+    if(letter===correct)o.classList.add('reveal');
+    if(letter===chosen&&chosen!==correct)o.classList.add('wrong');
+    if(letter===chosen&&chosen===correct)o.classList.add('correct');
+  });
+  card.classList.remove('active');card.classList.add('answered');
+  const answer=chosen+') '+(card.querySelector('[data-letter="'+chosen+'"]')?.dataset.text||chosen);
+  recordAnswer(chosen===correct,SUBJECT);
+  submitQuizAnswer(cardId,answer);
+}
+
 window.addEventListener('DOMContentLoaded',()=>{
   renderRef();
   validateS2&&validateS2();
@@ -2434,7 +2595,7 @@ function submitName(){
   if(!name) return;
   STU_NAME=name;
   try{localStorage.setItem('vidya_name',name);}catch(e){}
-  document.getElementById('nameModal').classList.add('hidden');
+  const m=document.getElementById('nameModal');if(m)m.style.display='none';
   initApp();
 }
 // Check on load
@@ -2443,13 +2604,16 @@ function checkName(){
     const saved=localStorage.getItem('vidya_name');
     if(saved&&saved.trim()){
       STU_NAME=saved.trim();
-      document.getElementById('nameModal').classList.add('hidden');
+      // Name exists — go straight to app, modal stays hidden
       initApp();
       return;
     }
   }catch(e){}
-  // First time — show modal
-  document.getElementById('nameInput').focus();
+  // First time — show the modal
+  const modal=document.getElementById('nameModal');
+  if(modal) modal.style.display='flex';
+  const ni=document.getElementById('nameInput');
+  if(ni) ni.focus();
 }
 
 // ══════════════════════════════════════════
@@ -2483,12 +2647,6 @@ function switchSubject(s){
 // ══════════════════════════════════════════
 //  TAB SWITCHING
 // ══════════════════════════════════════════
-function switchTab(t){
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('panel-'+t).classList.add('active');
-  document.getElementById('tab-'+t).classList.add('active');
-}
 
 // ══════════════════════════════════════════
 //  INIT APP — runs after name is known

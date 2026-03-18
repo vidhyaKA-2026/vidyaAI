@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Vidya — Karnataka SSLC AI Tutor</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css"/>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+  onload="window._katexReady=true"></script>
 <style>
 /* ═══════════════════════════════════════════════
    DESIGN SYSTEM — Warm Indian educational palette
@@ -329,6 +333,10 @@ body{
   box-shadow:0 3px 14px var(--saffron-glow);
   word-break:break-word;
 }
+/* Welcome bot bubble (used in buildWelcome) */
+.bubble.bot {
+  font-size:14px;line-height:1.78;color:var(--ink);
+}
 
 /* Quick chips */
 .chips-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
@@ -514,7 +522,7 @@ body{
 .canvas-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 /* Quick diagram buttons */
 .diagram-grid {
-  display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px;
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px;
 }
 .diagram-quick-btn {
   padding:12px 8px;border-radius:var(--r12);
@@ -525,6 +533,29 @@ body{
 }
 .diagram-quick-btn:hover{border-color:var(--saffron);background:var(--saffron-l);color:var(--saffron);transform:translateY(-1px)}
 .diagram-quick-btn .dq-icon{font-size:20px;display:block;margin-bottom:5px}
+/* Custom draw bar */
+.diagram-custom-bar{
+  display:flex;gap:7px;padding:12px 16px 4px;
+}
+.diagram-custom-input{
+  flex:1;border:1.5px solid var(--border2);border-radius:var(--r999);
+  padding:8px 14px;font-size:12.5px;font-family:var(--font);
+  color:var(--ink);background:var(--bg2);outline:none;
+  transition:border-color var(--t),box-shadow var(--t);
+}
+.diagram-custom-input:focus{border-color:var(--saffron);box-shadow:0 0 0 2px var(--saffron-glow)}
+.diagram-custom-input::placeholder{color:var(--muted2)}
+.diagram-custom-go{
+  padding:8px 14px;border-radius:var(--r999);border:none;
+  background:linear-gradient(135deg,var(--saffron),var(--gold));
+  color:#fff;font-size:12.5px;font-weight:700;font-family:var(--font);
+  cursor:pointer;transition:all var(--t);white-space:nowrap;
+}
+.diagram-custom-go:hover{transform:translateY(-1px);box-shadow:0 4px 12px var(--saffron-glow)}
+.diagram-section-label{
+  font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.06em;padding:4px 16px 2px;
+}
 /* Diagram output */
 #diagramOutput {
   flex:1;overflow-y:auto;padding:0;
@@ -594,6 +625,22 @@ body{
 .img-link-btn.wiki:hover{background:var(--green);color:#fff}
 .img-link-btn.draw{background:var(--violet-l);border-color:#ddd6fe;color:var(--violet)}
 .img-link-btn.draw:hover{background:var(--violet);color:#fff;border:none}
+
+/* ── MATH RENDERING ──────────────────────────── */
+.math-block {
+  display:block;overflow-x:auto;padding:10px 14px;margin:8px 0;
+  background:var(--surface2);border-radius:var(--r8);
+  border-left:3px solid var(--saffron);
+  text-align:center;
+}
+.math-inline {
+  display:inline;vertical-align:middle;
+}
+/* Make KaTeX fit app font sizing */
+.katex { font-size:1.05em !important; }
+.katex-display { margin:0 !important; overflow-x:auto; }
+/* fraction bars and symbols inherit ink colour in dark mode */
+[data-theme="dark"] .katex { color:var(--ink); }
 </style>
 </head>
 <body>
@@ -788,37 +835,11 @@ body{
           <div class="canvas-icon">🎨</div>
           <span class="canvas-name">Diagram Board</span>
         </div>
-        <button class="canvas-btn" onclick="askNewDiagram()">✏️ New</button>
+        <button class="canvas-btn" id="diagramHomeBtn" onclick="showDiagramHome()" style="display:none">🏠 Home</button>
       </div>
       <div class="canvas-body">
         <div id="diagramOutput">
-          <!-- Quick diagram buttons -->
-          <div class="diagram-grid">
-            <button class="diagram-quick-btn" onclick="generateDiagram('nephron structure kidney')">
-              <span class="dq-icon">🔬</span>Nephron
-            </button>
-            <button class="diagram-quick-btn" onclick="generateDiagram('reflex arc nervous system')">
-              <span class="dq-icon">🧠</span>Reflex Arc
-            </button>
-            <button class="diagram-quick-btn" onclick="generateDiagram('human heart chambers valves blood flow')">
-              <span class="dq-icon">❤️</span>Heart
-            </button>
-            <button class="diagram-quick-btn" onclick="generateDiagram('plant cell organelles labeled')">
-              <span class="dq-icon">🌱</span>Plant Cell
-            </button>
-            <button class="diagram-quick-btn" onclick="generateDiagram('electric circuit series parallel resistors')">
-              <span class="dq-icon">⚡</span>Circuit
-            </button>
-            <button class="diagram-quick-btn" onclick="generateDiagram('water cycle evaporation condensation precipitation')">
-              <span class="dq-icon">💧</span>Water Cycle
-            </button>
-            <button class="diagram-quick-btn" onclick="generateDiagram('triangle BPT Thales theorem similarity')">
-              <span class="dq-icon">📐</span>Triangle
-            </button>
-            <button class="diagram-quick-btn" onclick="generateDiagram('India physical map rivers mountains plateaus')">
-              <span class="dq-icon">🗺️</span>India Map
-            </button>
-          </div>
+          <!-- home screen shown by showDiagramHome() on load -->
         </div>
       </div>
     </div>
@@ -859,7 +880,47 @@ function getNextKey(){_keyIdx=(_keyIdx+1)%KEYS.length;return KEYS[_keyIdx];}
 let GEM_KEY=getCurrentKey(), STU_NAME='', SUBJECT='All Subjects', MODE='tutor';
 let AUTO_SPEAK=false, WEB_SEARCH_ON=true;
 let _abortCtrl=null, _lastUserMsg=null, _fingerprint=null;
+let _cancelRequested=false; // simple flag — no AbortController on shared state
 let loading=false, history=[], uploadedFile=null, uploadedDataUrl=null, uploadedMimeType=null;
+let _tc=0, _pickedSubject='All Subjects';
+
+function validateS2(){ /* kept for compatibility */ }
+
+// ── THINKING MESSAGES ─────────────────────────────────────────────
+const THINKING_MSGS={
+  Mathematics:['Crunching the numbers…','Checking the formula…','Working it out step by step…','Solving with the blueprint…'],
+  Science:['Running the experiment mentally…','Balancing the equation…','Applying the laws of physics…','Checking the DSERT syllabus…'],
+  'Social Science':['Flipping through history…','Checking dates and events…','Scanning the geography notes…','Looking up the blueprint…'],
+  English:['Reading between the lines…','Checking grammar rules…','Scanning the prose lessons…','Finding the right words…'],
+  Hindi:['हिंदी व्याकरण देख रहे हैं…','उत्तर तैयार हो रहा है…'],
+  Kannada:['ಉತ್ತರ ತಯಾರಾಗುತ್ತಿದೆ…','ಕನ್ನಡ ಪಠ್ಯ ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…'],
+  default:['Thinking…','Looking that up…','Preparing your answer…','Checking the SSLC syllabus…']
+};
+
+// ── DIAGRAM REQUEST DETECTION ─────────────────────────────────────
+function isDiagramRequest(txt){
+  return /diagram|draw|sketch|figure|structure|label|show me a|illustrat/i.test(txt);
+}
+
+function toggleAutoSpeak(){
+  AUTO_SPEAK=!AUTO_SPEAK;
+  const btn=document.getElementById('speakToggleBtn');
+  if(btn){
+    btn.classList.toggle('speaking-on',AUTO_SPEAK);
+    btn.title=AUTO_SPEAK?'AI voice ON (click to turn off)':'AI voice OFF (click to turn on)';
+  }
+  if(AUTO_SPEAK) setVoiceStatus('🔊 Auto-speak ON');
+  else{stopSpeaking();setVoiceStatus('');}
+}
+
+function toggleWebSearch(){
+  WEB_SEARCH_ON=!WEB_SEARCH_ON;
+  const btn=document.getElementById('webSearchBtn');
+  if(btn){
+    btn.classList.toggle('active',WEB_SEARCH_ON);
+    btn.title=WEB_SEARCH_ON?'Web search ON':'Web search OFF';
+  }
+}
 
 // ── MODEL & RATE LIMITING ─────────────────────────────────────────
  // switch to 'gemini-2.5-flash' to enable per-user limit
@@ -1208,7 +1269,8 @@ function updateSend(){
 }
 
 function stopGeneration(){
-  if(_abortCtrl){try{_abortCtrl.abort();}catch(e){}_abortCtrl=null;}
+  _cancelRequested=true;
+  _abortCtrl=null;
   // Clear typing indicators immediately
   Object.keys(_typingTimers||{}).forEach(id=>{
     clearInterval(_typingTimers[id]);delete _typingTimers[id];
@@ -1256,16 +1318,19 @@ async function sendMsg(retryMsg){
   const tid=showTyping();
 
   try{
-    _abortCtrl=new AbortController();
+    _cancelRequested=false;
+    _abortCtrl=null;
     const resp=await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent?key=${GEM_KEY}`,
-      {method:'POST',headers:{'Content-Type':'application/json'},signal:_abortCtrl.signal,
+      `https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent`,
+      {method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEM_KEY},
        body:JSON.stringify({
          system_instruction:{parts:[{text:sysPrompt()}]},
          contents:history,
          generationConfig:{temperature:0.7,maxOutputTokens:1024}
        })}
     );
+    // If user pressed Stop while fetch was in flight, discard the response silently
+    if(_cancelRequested){ hideTyping(tid); loading=false; updateSend(); return; }
     hideTyping(tid);
     if(!resp.ok){
       let eBody={};
@@ -1286,7 +1351,7 @@ async function sendMsg(retryMsg){
     hideTyping(tid);
     console.error('Vidya API Error:', err);
     const msg=err.message||'';
-    const isAbort=err.name==='AbortError'||msg.toLowerCase().includes('abort');
+    const isAbort=_cancelRequested||err.name==='AbortError'||err.name==='DataCloneError'||msg.toLowerCase().includes('abort')||msg.toLowerCase().includes('clone');
     if(isAbort){
       Object.keys(_typingTimers||{}).forEach(id=>{
         clearInterval(_typingTimers[id]);delete _typingTimers[id];
@@ -1360,13 +1425,28 @@ RESPONSE RULES:
 3. For Social Science — use bullet points with dates and names bolded
 4. NEVER say "Great question!" — just answer directly
 5. Keep responses concise (under 300 words unless complex problem requires more)
-${WEB_SEARCH_ON?'6. You can reference current information if needed.':''}`;
+6. MATH FORMATTING — Always write ALL mathematical expressions using LaTeX notation so they render beautifully:
+   - Inline math: wrap in \\( ... \\)  e.g. \\(x^2 + y^2 = z^2\\)
+   - Display/block math: wrap in $$ ... $$  e.g. $$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+   - NEVER write: sqrt(), ^2 as plain text, fractions as a/b in running text
+   - ALWAYS use: \\sqrt{}, ^{2}, \\frac{a}{b}
+   - Greek letters: \\alpha \\beta \\theta \\pi \\Delta
+   - Subscripts: a_{n} S_{n} V_{1}
+   - Examples of correct usage:
+     * Quadratic formula: $$x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$
+     * AP nth term: $$a_n = a + (n-1)d$$
+     * Pythagoras: \\(a^2 + b^2 = c^2\\)
+     * Ohm's Law: \\(V = IR\\)
+     * Mirror formula: $$\\frac{1}{v} + \\frac{1}{u} = \\frac{1}{f}$$
+${WEB_SEARCH_ON?'7. You can reference current information if needed.':''}`;
 }
 
 let _typingTimers = {};
 
 function showTyping(){
   const id = 'ty'+(++_tc);
+  const row = document.createElement('div');
+  const inner = document.getElementById('msgsInner');
   row.id = id;
   row.className = 'typing-row';
 
@@ -1375,7 +1455,7 @@ function showTyping(){
   const startMsg = msgs[Math.floor(Math.random()*msgs.length)];
 
   row.innerHTML = `<div class="bot-av">🤖</div><div class="typing-bub"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div><div class="typing-msg" id="tmsg_${id}">${startMsg}</div></div>`;
-  inner.appendChild(row);
+  if(inner) inner.appendChild(row);
   scrollChat();
 
   // Rotate through messages every 2.5s
@@ -1431,85 +1511,83 @@ Sum/product rules:
   • rational × non-zero irrational = irrational`},
 
   {s:'Mathematics',c:'formula',title:'Polynomials',marks:null,
-   body:`For quadratic ax² + bx + c:
-  Sum of zeroes   (α + β)  = c-b/a
-  Product of zeroes (α × β) = cc/a
+   body:`For quadratic \\(ax^2 + bx + c\\):
+  Sum of zeroes \\((\\alpha + \\beta) = \\frac{-b}{a}\\)
+  Product of zeroes \\((\\alpha \\times \\beta) = \\frac{c}{a}\\)
 
-For cubic ax³ + bx² + cx + d:
-  α + β + γ  = c-b/a
-  αβ + βγ + γα = cc/a
-  αβγ        = c-d/a`},
+For cubic \\(ax^3 + bx^2 + cx + d\\):
+  \\(\\alpha + \\beta + \\gamma = \\frac{-b}{a}\\)
+  \\(\\alpha\\beta + \\beta\\gamma + \\gamma\\alpha = \\frac{c}{a}\\)
+  \\(\\alpha\\beta\\gamma = \\frac{-d}{a}\\)`},
 
   {s:'Mathematics',c:'formula',title:'Quadratic Equations ⭐',marks:'6m',
-   body:`Standard form: ax² + bx + c = 0
+   body:`Standard form: \\(ax^2 + bx + c = 0\\)
 
-Quadratic Formula:
-  cx = ( -b ± √(b²-4ac) ) / 2a
+**Quadratic Formula:**
+$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
 
-Discriminant D = b² - 4ac:
+Discriminant \\(D = b^2 - 4ac\\):
   D > 0 → two distinct real roots
   D = 0 → two equal (repeated) roots
   D < 0 → no real roots
 
 Factorisation method: split middle term.
-Completing the square: write as (x + p)² = q`},
+Completing the square: write as \\((x + p)^2 = q\\)`},
 
   {s:'Mathematics',c:'formula',title:'Arithmetic Progressions ⭐⭐',marks:'8m',
    body:`General term (nth term):
-  caₙ = a + (n-1)d
+$$a_n = a + (n-1)d$$
 
 Sum of first n terms:
-  cSₙ = n/2 × [2a + (n-1)d]
-  cSₙ = n/2 × (a + l)   ← when last term l is known
+$$S_n = \\frac{n}{2}[2a + (n-1)d]$$
+$$S_n = \\frac{n}{2}(a + l) \\quad \\text{when last term } l \\text{ is known}$$
 
-Relationship: aₙ = Sₙ - Sₙ₋₁
-
-Common difference: d = aₙ - aₙ₋₁`},
+Relationship: \\(a_n = S_n - S_{n-1}\\)
+Common difference: \\(d = a_n - a_{n-1}\\)`},
 
   {s:'Mathematics',c:'formula',title:'Triangles ⭐⭐⭐',marks:'9m — HIGHEST',
-   body:`Basic Proportionality Theorem (BPT / Thales):
-  If DE ∥ BC in △ABC → cAD/DB = AE/EC
+   body:`**Basic Proportionality Theorem (BPT / Thales):**
+If DE ∥ BC in △ABC:
+$$\\frac{AD}{DB} = \\frac{AE}{EC}$$
 
-Pythagoras Theorem:
-  ca² + b² = c²  (c = hypotenuse)
-Converse: If a²+b² = c² → angle C = 90°
+**Pythagoras Theorem:**
+$$a^2 + b^2 = c^2 \\quad (c = \\text{hypotenuse})$$
+Converse: If \\(a^2 + b^2 = c^2\\) → angle C = 90°
 
 Area of similar triangles:
-  cArea₁ / Area₂ = (side₁)² / (side₂)²
+$$\\frac{\\text{Area}_1}{\\text{Area}_2} = \\left(\\frac{\\text{side}_1}{\\text{side}_2}\\right)^2$$
 
 Similarity criteria: AA, SSS, SAS
-Key ratios for 30-60-90: sides 1 : √3 : 2
-Key ratios for 45-45-90: sides 1 : 1 : √2`},
+Key ratios for 30-60-90: sides \\(1 : \\sqrt{3} : 2\\)
+Key ratios for 45-45-90: sides \\(1 : 1 : \\sqrt{2}\\)`},
 
   {s:'Mathematics',c:'formula',title:'Coordinate Geometry ⭐',marks:'6m',
-   body:`Distance Formula:
-  cd = √[ (x₂-x₁)² + (y₂-y₁)² ]
+   body:`**Distance Formula:**
+$$d = \\sqrt{(x_2-x_1)^2 + (y_2-y_1)^2}$$
 
-Section Formula (internal division m:n):
-  cx = (mx₂ + nx₁)/(m+n)
-  cy = (my₂ + ny₁)/(m+n)
+**Section Formula** (internal division m:n):
+$$x = \\frac{mx_2 + nx_1}{m+n}, \\quad y = \\frac{my_2 + ny_1}{m+n}$$
 
-Midpoint Formula:
-  cM = ( (x₁+x₂)/2 , (y₁+y₂)/2 )
+**Midpoint Formula:**
+$$M = \\left(\\frac{x_1+x_2}{2},\\ \\frac{y_1+y_2}{2}\\right)$$
 
-Area of Triangle:
-  c½ |x₁(y₂-y₃) + x₂(y₃-y₁) + x₃(y₁-y₂)|`},
+**Area of Triangle:**
+$$\\text{Area} = \\frac{1}{2}|x_1(y_2-y_3) + x_2(y_3-y_1) + x_3(y_1-y_2)|$$`},
 
   {s:'Mathematics',c:'formula',title:'Trigonometry ⭐',marks:'6m',
    body:`Reciprocal relations:
-  sin θ = 1/cosecθ  |  cos θ = 1/sec θ  |  tan θ = 1/cot θ
-  tan θ = sin θ / cos θ
+\\(\\sin\\theta = \\frac{1}{\\cosec\\theta}\\)  |  \\(\\cos\\theta = \\frac{1}{\\sec\\theta}\\)  |  \\(\\tan\\theta = \\frac{\\sin\\theta}{\\cos\\theta}\\)
 
-Pythagorean Identities:
-  csin²θ + cos²θ = 1
-  c1 + tan²θ = sec²θ
-  c1 + cot²θ = cosec²θ
+**Pythagorean Identities:**
+$$\\sin^2\\theta + \\cos^2\\theta = 1$$
+$$1 + \\tan^2\\theta = \\sec^2\\theta$$
+$$1 + \\cot^2\\theta = \\cosec^2\\theta$$
 
-Standard values table:
-  θ       | 0°  | 30°   | 45°   | 60°   | 90°
-  sin θ   |  0  |  1/2  | 1/√2 | √3/2  |  1
-  cos θ   |  1  | √3/2  | 1/√2 |  1/2  |  0
-  tan θ   |  0  |  1/√3 |   1  |  √3   |  ∞`},
+Standard values:
+  θ       | 0°  | 30°   | 45°          | 60°          | 90°
+  sin θ   |  0  |  1/2  | \\(1/\\sqrt{2}\\) | \\(\\sqrt{3}/2\\)  |  1
+  cos θ   |  1  | \\(\\sqrt{3}/2\\)  | \\(1/\\sqrt{2}\\) |  1/2  |  0
+  tan θ   |  0  |  \\(1/\\sqrt{3}\\) |   1  |  \\(\\sqrt{3}\\)   |  ∞`},
 
   {s:'Mathematics',c:'formula',title:'Circles',marks:null,
    body:`Key theorems:
@@ -1519,70 +1597,70 @@ Standard values table:
   • Angle subtended at centre = 2 × angle at circumference
 
 Length of tangent from external point P:
-  cPT = √(PO² - r²)  where O is centre, r is radius`},
+$$PT = \\sqrt{PO^2 - r^2}$$
+where O is centre, r is radius`},
 
   {s:'Mathematics',c:'formula',title:'Areas Related to Circles',marks:null,
-   body:`Area of circle = cπr²
-Circumference = c2πr
+   body:`Area of circle = \\(\\pi r^2\\)
+Circumference = \\(2\\pi r\\)
 
 For sector with angle θ (degrees):
-  Arc length = c(θ/360) × 2πr
-  Area of sector = c(θ/360) × πr²
+$$\\text{Arc length} = \\frac{\\theta}{360} \\times 2\\pi r$$
+$$\\text{Area of sector} = \\frac{\\theta}{360} \\times \\pi r^2$$
 
-Area of segment:
-  c= Area of sector - Area of triangle`},
+Area of segment = Area of sector − Area of triangle`},
 
   {s:'Mathematics',c:'formula',title:'Surface Areas & Volumes ⭐⭐',marks:'7m',
-   body:`Cylinder:  CSA=c2πrh  |  TSA=c2πr(r+h)  |  V=cπr²h
-Cone:      CSA=cπrl    |  TSA=cπr(r+l)  |  V=c⅓πr²h  |  l=c√(r²+h²)
-Sphere:    SA=c4πr²    |  V=c(4/3)πr³
-Hemisphere:CSA=c2πr²   |  TSA=c3πr²     |  V=c(2/3)πr³
-Frustum:   V=c(πh/3)(r₁²+r₂²+r₁r₂)  |  l=c√[h²+(r₁-r₂)²]`},
+   body:`**Cylinder:** CSA = \\(2\\pi rh\\) | TSA = \\(2\\pi r(r+h)\\) | V = \\(\\pi r^2 h\\)
+**Cone:** CSA = \\(\\pi rl\\) | TSA = \\(\\pi r(r+l)\\) | V = \\(\\frac{1}{3}\\pi r^2 h\\) | \\(l=\\sqrt{r^2+h^2}\\)
+**Sphere:** SA = \\(4\\pi r^2\\) | V = \\(\\frac{4}{3}\\pi r^3\\)
+**Hemisphere:** CSA = \\(2\\pi r^2\\) | TSA = \\(3\\pi r^2\\) | V = \\(\\frac{2}{3}\\pi r^3\\)
+**Frustum:** $$V = \\frac{\\pi h}{3}(r_1^2 + r_2^2 + r_1 r_2), \\quad l = \\sqrt{h^2+(r_1-r_2)^2}$$`},
 
   {s:'Mathematics',c:'formula',title:'Statistics',marks:null,
-   body:`Mean — Direct Method:  cx̄ = Σfᵢxᵢ / Σfᵢ
-Mean — Assumed Mean:  cx̄ = A + Σfᵢdᵢ / Σfᵢ   (dᵢ = xᵢ - A)
+   body:`**Mean — Direct Method:** \\(\\bar{x} = \\frac{\\sum f_i x_i}{\\sum f_i}\\)
+**Mean — Assumed Mean:** \\(\\bar{x} = A + \\frac{\\sum f_i d_i}{\\sum f_i}\\)  where \\(d_i = x_i - A\\)
 
-Mode:  cl + [(f₁-f₀)/(2f₁-f₀-f₂)] × h
-  l=lower boundary, f₁=modal class freq, f₀=preceding freq, f₂=following freq, h=class size
+**Mode:**
+$$l + \\frac{f_1-f_0}{2f_1-f_0-f_2} \\times h$$
+l = lower boundary, f₁ = modal class freq, f₀ = preceding, f₂ = following, h = class size
 
-Median:  cl + [(n/2 - cf)/f] × h
-  cf = cumulative frequency before median class
+**Median:**
+$$l + \\frac{\\frac{n}{2} - cf}{f} \\times h$$
+cf = cumulative frequency before median class
 
-Empirical relation:
-  cMode = 3×Median - 2×Mean`},
+**Empirical relation:** Mode = 3×Median − 2×Mean`},
 
   {s:'Mathematics',c:'formula',title:'Probability',marks:null,
-   body:`Classical Probability:
-  cP(E) = Favourable outcomes / Total outcomes
+   body:`**Classical Probability:**
+$$P(E) = \\frac{\\text{Favourable outcomes}}{\\text{Total outcomes}}$$
 
-Range: 0 ≤ P(E) ≤ 1
-Complement: cP(E) + P(Ē) = 1
-Certain event: P = 1  |  Impossible event: P = 0
-
-Equally likely outcomes: each has equal probability.`},
+Range: \\(0 \\leq P(E) \\leq 1\\)
+Complement: \\(P(E) + P(\\bar{E}) = 1\\)
+Certain event: P = 1 | Impossible event: P = 0`},
 
   /* ── SCIENCE FORMULAS ── */
   {s:'Science',c:'formula',title:'Electricity ⭐⭐⭐',marks:'8m — HIGHEST',
-   body:`Ohm's Law:  cV = IR   (V=volts, I=amps, R=ohms)
+   body:`**Ohm's Law:** \\(V = IR\\)  (V = volts, I = amps, R = ohms)
 
-Resistance:
-  Series:   cR = R₁ + R₂ + R₃
-  Parallel: c1/R = 1/R₁ + 1/R₂ + 1/R₃
-  Resistivity: cR = ρl/A
+**Resistance:**
+  Series: \\(R = R_1 + R_2 + R_3\\)
+  Parallel: \\(\\frac{1}{R} = \\frac{1}{R_1} + \\frac{1}{R_2} + \\frac{1}{R_3}\\)
+  Resistivity: \\(R = \\frac{\\rho l}{A}\\)
 
-Power:  cP = VI = I²R = V²/R   (watts)
-Energy: cE = Pt = VIt           (joules or kWh)
+**Power:** \\(P = VI = I^2R = \\frac{V^2}{R}\\)  (watts)
+**Energy:** \\(E = Pt = VIt\\)  (joules or kWh)
 
-Joule's Law of Heating:
-  cH = I²Rt
+**Joule's Heating Law:** \\(H = I^2Rt\\)
 
-Commercial unit: 1 kWh = 1 unit = 3.6×10⁶ J`},
+Commercial unit: 1 kWh = 1 unit = \\(3.6 \\times 10^6\\) J`},
 
   {s:'Science',c:'formula',title:'Light — Mirrors ⭐⭐',marks:'8m — HIGHEST',
-   body:`Mirror formula:  c1/v + 1/u = 1/f
-Magnification:   cm = -v/u = h'/h
-Focal length:    cf = R/2
+   body:`**Mirror formula:**
+$$\\frac{1}{v} + \\frac{1}{u} = \\frac{1}{f}$$
+
+**Magnification:** \\(m = \\frac{-v}{u} = \\frac{h'}{h}\\)
+**Focal length:** \\(f = \\frac{R}{2}\\)
 
 Sign Convention (New Cartesian):
   • Distances measured from pole
@@ -1592,22 +1670,24 @@ Sign Convention (New Cartesian):
   • Convex mirror:  f is positive`},
 
   {s:'Science',c:'formula',title:'Light — Lenses ⭐⭐',marks:'(part of Ch9)',
-   body:`Lens formula:     c1/v - 1/u = 1/f
-Magnification:    cm = v/u = h'/h
-Power of lens:    cP = 1/f  (f in metres → P in Dioptres D)
-Combination:      cP = P₁ + P₂ + P₃
+   body:`**Lens formula:**
+$$\\frac{1}{v} - \\frac{1}{u} = \\frac{1}{f}$$
 
-Snell's Law:  cn = sin i / sin r
-Speed relation: cn = c/v
+**Magnification:** \\(m = \\frac{v}{u} = \\frac{h'}{h}\\)
+**Power of lens:** \\(P = \\frac{1}{f}\\)  (f in metres → P in Dioptres D)
+**Combination:** \\(P = P_1 + P_2 + P_3\\)
 
-Convex (converging): f positive  |  Concave (diverging): f negative`},
+**Snell's Law:** \\(n = \\frac{\\sin i}{\\sin r}\\)
+**Speed relation:** \\(n = \\frac{c}{v}\\)
+
+Convex (converging): f positive | Concave (diverging): f negative`},
 
   {s:'Science',c:'formula',title:'Carbon Compounds ⭐⭐⭐',marks:'8m — HIGHEST',
    body:`Combustion of methane:
-  cCH₄ + 2O₂ → CO₂ + 2H₂O
+  CH₄ + 2O₂ → CO₂ + 2H₂O
 
 Ethanol + sodium:
-  c2C₂H₅OH + 2Na → 2C₂H₅ONa + H₂↑
+  2C₂H₅OH + 2Na → 2C₂H₅ONa + H₂↑
 
 Oxidation of ethanol to ethanoic acid:
   C₂H₅OH + [O] → CH₃COOH  (acidified K₂Cr₂O₇)
@@ -1623,22 +1703,22 @@ Functional groups: -OH (alcohol), -COOH (acid), -CHO (aldehyde), C=O (ketone)`},
 
   {s:'Science',c:'formula',title:'Key Chemical Equations',marks:null,
    body:`Photosynthesis:
-  c6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂  (chlorophyll, sunlight)
+  6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂  (chlorophyll, sunlight)
 
 Aerobic Respiration:
-  cC₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + Energy (ATP)
+  C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + Energy (ATP)
 
 Zinc + dilute H₂SO₄:
-  cZn + H₂SO₄ → ZnSO₄ + H₂↑
+  Zn + H₂SO₄ → ZnSO₄ + H₂↑
 
 Thermite reaction (Displacement):
-  cFe₂O₃ + 2Al → Al₂O₃ + 2Fe
+  Fe₂O₃ + 2Al → Al₂O₃ + 2Fe
 
 Decomposition of CaCO₃:
-  cCaCO₃ → CaO + CO₂  (heating)
+  CaCO₃ → CaO + CO₂  (heating)
 
 Neutralisation:
-  cNaOH + HCl → NaCl + H₂O`},
+  NaOH + HCl → NaCl + H₂O`},
 
   /* ── CHAPTERS ── */
   {s:'Mathematics',c:'chapter',title:'All 14 Chapters — Maths Class 10',marks:null,
@@ -2085,9 +2165,12 @@ function toggleCard(id){
 }
 
 function formatRefBody(text){
-  return escHtml(text)
-    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-    .replace(/⭐/g,'<span class="hi">⭐</span>');
+  let h = escHtml(text);
+  h = h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h = h.replace(/⭐/g,'<span class="hi">⭐</span>');
+  h = h.replace(/\n/g,'<br>');
+  h = processMath(h);
+  return h;
 }
 
 // Init ref on page load with all items visible
@@ -2164,34 +2247,864 @@ function showProgressDashboard(){
 }
 
 
+// ── BUILT-IN SVG DIAGRAMS (perfect quality, no API needed) ──────────
+const SVG_DIAGRAMS={
+  'nephron':`<svg viewBox="0 0 520 480" xmlns="http://www.w3.org/2000/svg" font-family="Sora,sans-serif" font-size="11">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#555"/></marker>
+    <marker id="arrB" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#1a5cb8"/></marker>
+    <marker id="arrR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#c42020"/></marker>
+  </defs>
+  <!-- Title -->
+  <text x="260" y="22" text-anchor="middle" font-size="15" font-weight="700" fill="#1c1510">Nephron — Structure of Kidney</text>
+  <text x="260" y="38" text-anchor="middle" font-size="10" fill="#9c8b7a">Karnataka SSLC Science — Excretion in Humans</text>
+
+  <!-- Bowman's Capsule -->
+  <ellipse cx="180" cy="95" rx="42" ry="38" fill="#fff4eb" stroke="#e8720c" stroke-width="2.5"/>
+  <ellipse cx="180" cy="95" rx="24" ry="20" fill="#fde8c8" stroke="#e8720c" stroke-width="1.5"/>
+  <text x="180" y="91" text-anchor="middle" font-weight="700" fill="#c45e08">Bowman's</text>
+  <text x="180" y="103" text-anchor="middle" font-weight="700" fill="#c45e08">Capsule</text>
+
+  <!-- Glomerulus -->
+  <ellipse cx="180" cy="95" rx="13" ry="11" fill="#ffb347" stroke="#e8720c" stroke-width="1.5"/>
+  <text x="130" y="68" text-anchor="middle" font-size="10" fill="#555">Glomerulus</text>
+  <line x1="147" y1="72" x2="168" y2="87" stroke="#555" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- Afferent arteriole -->
+  <path d="M110,65 Q145,70 167,84" fill="none" stroke="#c42020" stroke-width="3" marker-end="url(#arrR)"/>
+  <text x="78" y="58" font-size="10" fill="#c42020" font-weight="600">Afferent</text>
+  <text x="78" y="69" font-size="10" fill="#c42020" font-weight="600">Arteriole</text>
+
+  <!-- Efferent arteriole -->
+  <path d="M193,84 Q215,72 230,78" fill="none" stroke="#1a5cb8" stroke-width="3" marker-end="url(#arrB)"/>
+  <text x="228" y="68" font-size="10" fill="#1a5cb8" font-weight="600">Efferent</text>
+  <text x="228" y="79" font-size="10" fill="#1a5cb8" font-weight="600">Arteriole</text>
+
+  <!-- PCT -->
+  <path d="M180,133 Q230,150 240,175 Q248,200 230,215 Q210,228 200,250" fill="none" stroke="#d4900a" stroke-width="5" stroke-linecap="round"/>
+  <text x="262" y="185" font-size="10" fill="#d4900a" font-weight="700">Proximal</text>
+  <text x="262" y="197" font-size="10" fill="#d4900a" font-weight="700">Convoluted</text>
+  <text x="262" y="209" font-size="10" fill="#d4900a" font-weight="700">Tubule (PCT)</text>
+  <line x1="258" y1="197" x2="242" y2="197" stroke="#d4900a" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- Loop of Henle descending -->
+  <path d="M200,250 Q195,290 190,330 Q188,355 195,370" fill="none" stroke="#1a7a3c" stroke-width="5" stroke-linecap="round"/>
+  <!-- Loop of Henle ascending -->
+  <path d="M195,370 Q210,385 225,370 Q235,355 232,330 Q228,295 220,265" fill="none" stroke="#1a7a3c" stroke-width="5" stroke-linecap="round"/>
+  <!-- Loop tip -->
+  <ellipse cx="205" cy="375" rx="14" ry="8" fill="#edf7f2" stroke="#1a7a3c" stroke-width="2"/>
+  <text x="105" y="368" font-size="10" fill="#1a7a3c" font-weight="700">Loop of</text>
+  <text x="100" y="380" font-size="10" fill="#1a7a3c" font-weight="700">Henlé</text>
+  <text x="95" y="392" font-size="10" fill="#1a7a3c">(↓ desc. ↑ asc.)</text>
+  <line x1="140" y1="376" x2="190" y2="376" stroke="#1a7a3c" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- DCT -->
+  <path d="M220,265 Q260,250 275,230 Q288,210 270,190 Q255,175 250,160" fill="none" stroke="#6b2db8" stroke-width="5" stroke-linecap="round"/>
+  <text x="295" y="248" font-size="10" fill="#6b2db8" font-weight="700">Distal</text>
+  <text x="295" y="260" font-size="10" fill="#6b2db8" font-weight="700">Convoluted</text>
+  <text x="295" y="272" font-size="10" fill="#6b2db8" font-weight="700">Tubule (DCT)</text>
+  <line x1="293" y1="258" x2="278" y2="235" stroke="#6b2db8" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- Collecting duct -->
+  <path d="M250,160 Q265,145 270,130 Q275,110 270,90 Q268,75 265,60" fill="none" stroke="#555" stroke-width="5" stroke-linecap="round"/>
+  <rect x="255" y="38" width="30" height="20" rx="4" fill="#e2d9ce" stroke="#555" stroke-width="1.5"/>
+  <text x="270" y="52" text-anchor="middle" font-size="9" fill="#333">Collecting</text>
+  <line x1="295" y1="45" x2="287" y2="48" stroke="#555" stroke-width="1"/>
+  <text x="297" y="48" font-size="10" fill="#555" font-weight="700">Collecting Duct</text>
+
+  <!-- Renal artery/vein labels -->
+  <text x="30" y="90" font-size="10" fill="#c42020" font-weight="700">Renal</text>
+  <text x="30" y="101" font-size="10" fill="#c42020" font-weight="700">Artery</text>
+  <path d="M70,93 Q90,80 108,68" fill="none" stroke="#c42020" stroke-width="2" marker-end="url(#arrR)"/>
+
+  <!-- Peritubular capillaries -->
+  <rect x="310" y="140" width="120" height="58" rx="8" fill="#eff4fd" stroke="#1a5cb8" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="370" y="158" text-anchor="middle" font-size="10" fill="#1a5cb8" font-weight="700">Peritubular</text>
+  <text x="370" y="170" text-anchor="middle" font-size="10" fill="#1a5cb8" font-weight="700">Capillaries</text>
+  <text x="370" y="183" text-anchor="middle" font-size="9" fill="#1a5cb8">(reabsorption)</text>
+
+  <!-- Urine arrow -->
+  <path d="M265,58 L265,22" fill="none" stroke="#9c8b7a" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="340" y="22" font-size="10" fill="#9c8b7a">→ Renal Pelvis → Ureter → Bladder</text>
+
+  <!-- Key box -->
+  <rect x="30" y="400" width="460" height="68" rx="8" fill="#faf7f3" stroke="#e2d9ce" stroke-width="1"/>
+  <text x="260" y="416" text-anchor="middle" font-size="10" font-weight="700" fill="#3d3028">Key Process at Each Part</text>
+  <text x="42" y="432" font-size="9.5" fill="#555">● Glomerulus: Ultrafiltration (blood pressure forces fluid out)</text>
+  <text x="42" y="446" font-size="9.5" fill="#555">● PCT: Reabsorption of glucose, amino acids, water, salts</text>
+  <text x="42" y="460" font-size="9.5" fill="#555">● Loop of Henlé: Concentration of urine (water reabsorption)</text>
+  <text x="42" y="474" font-size="9.5" fill="#555">● DCT: Selective reabsorption &amp; secretion  ● Collecting Duct: Final water reabsorption</text>
+</svg>`,
+
+  'reflex arc':`<svg viewBox="0 0 520 380" xmlns="http://www.w3.org/2000/svg" font-family="Sora,sans-serif" font-size="11">
+  <defs>
+    <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#e8720c"/></marker>
+    <marker id="arrG2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#1a7a3c"/></marker>
+  </defs>
+  <text x="260" y="22" text-anchor="middle" font-size="15" font-weight="700" fill="#1c1510">Reflex Arc — Nervous System</text>
+  <text x="260" y="38" text-anchor="middle" font-size="10" fill="#9c8b7a">Karnataka SSLC Science — Control &amp; Coordination</text>
+
+  <!-- Receptor -->
+  <ellipse cx="60" cy="200" rx="40" ry="22" fill="#fff4eb" stroke="#e8720c" stroke-width="2"/>
+  <text x="60" y="197" text-anchor="middle" font-weight="700" fill="#c45e08">Receptor</text>
+  <text x="60" y="209" text-anchor="middle" font-size="9" fill="#9c8b7a">(skin/sense organ)</text>
+
+  <!-- Sensory neuron -->
+  <path d="M100,200 L175,200" fill="none" stroke="#e8720c" stroke-width="3" marker-end="url(#arr2)"/>
+  <text x="137" y="190" text-anchor="middle" font-size="10" fill="#e8720c" font-weight="600">Sensory</text>
+  <text x="137" y="201" text-anchor="middle" font-size="10" fill="#e8720c" font-weight="600">Neuron</text>
+  <text x="137" y="212" text-anchor="middle" font-size="9" fill="#9c8b7a">(afferent)</text>
+
+  <!-- Spinal cord -->
+  <rect x="175" y="140" width="90" height="120" rx="12" fill="#f3eefb" stroke="#6b2db8" stroke-width="2.5"/>
+  <text x="220" y="165" text-anchor="middle" font-weight="700" fill="#6b2db8">Spinal</text>
+  <text x="220" y="178" text-anchor="middle" font-weight="700" fill="#6b2db8">Cord</text>
+  <text x="220" y="192" text-anchor="middle" font-size="9" fill="#9c8b7a">(Nerve Centre)</text>
+  <!-- Relay neuron inside -->
+  <ellipse cx="220" cy="215" rx="26" ry="14" fill="#e8d5f9" stroke="#6b2db8" stroke-width="1.5"/>
+  <text x="220" y="212" text-anchor="middle" font-size="9" fill="#6b2db8" font-weight="700">Relay</text>
+  <text x="220" y="222" text-anchor="middle" font-size="9" fill="#6b2db8" font-weight="700">Neuron</text>
+  <!-- Synapse dots -->
+  <circle cx="195" cy="208" r="4" fill="#6b2db8"/>
+  <circle cx="245" cy="208" r="4" fill="#6b2db8"/>
+  <text x="185" y="237" font-size="8" fill="#6b2db8">◄ synapse ►</text>
+
+  <!-- Motor neuron -->
+  <path d="M265,200 L340,200" fill="none" stroke="#1a7a3c" stroke-width="3" marker-end="url(#arrG2)"/>
+  <text x="303" y="190" text-anchor="middle" font-size="10" fill="#1a7a3c" font-weight="600">Motor</text>
+  <text x="303" y="201" text-anchor="middle" font-size="10" fill="#1a7a3c" font-weight="600">Neuron</text>
+  <text x="303" y="212" text-anchor="middle" font-size="9" fill="#9c8b7a">(efferent)</text>
+
+  <!-- Effector -->
+  <ellipse cx="420" cy="200" rx="65" ry="22" fill="#edf7f2" stroke="#1a7a3c" stroke-width="2"/>
+  <text x="420" y="197" text-anchor="middle" font-weight="700" fill="#1a7a3c">Effector</text>
+  <text x="420" y="209" text-anchor="middle" font-size="9" fill="#9c8b7a">(muscle / gland)</text>
+
+  <!-- Stimulus label -->
+  <path d="M60,175 L60,150" fill="none" stroke="#c42020" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr2)"/>
+  <text x="60" y="143" text-anchor="middle" font-size="10" fill="#c42020" font-weight="700">STIMULUS</text>
+  <text x="60" y="154" text-anchor="middle" font-size="9" fill="#c42020">(e.g. pin prick)</text>
+
+  <!-- Response label -->
+  <path d="M420,175 L420,150" fill="none" stroke="#1a7a3c" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrG2)"/>
+  <text x="420" y="143" text-anchor="middle" font-size="10" fill="#1a7a3c" font-weight="700">RESPONSE</text>
+  <text x="420" y="154" text-anchor="middle" font-size="9" fill="#1a7a3c">(e.g. withdraw hand)</text>
+
+  <!-- Brain override arrow -->
+  <path d="M220,140 L220,95" fill="none" stroke="#1a5cb8" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <rect x="165" y="65" width="110" height="28" rx="6" fill="#eff4fd" stroke="#1a5cb8" stroke-width="1.5"/>
+  <text x="220" y="79" text-anchor="middle" font-size="10" fill="#1a5cb8" font-weight="700">Brain (aware later)</text>
+  <text x="220" y="91" text-anchor="middle" font-size="9" fill="#1a5cb8">Voluntary control</text>
+
+  <!-- Flow banner -->
+  <rect x="30" y="300" width="460" height="60" rx="8" fill="#faf7f3" stroke="#e2d9ce" stroke-width="1"/>
+  <text x="260" y="318" text-anchor="middle" font-size="10" font-weight="700" fill="#3d3028">Reflex Arc Flow (Involuntary &amp; Very Fast)</text>
+  <text x="260" y="334" text-anchor="middle" font-size="10" fill="#555">Stimulus → Receptor → Sensory Neuron → Spinal Cord (Relay Neuron)</text>
+  <text x="260" y="349" text-anchor="middle" font-size="10" fill="#555">→ Motor Neuron → Effector → Response</text>
+  <text x="260" y="363" text-anchor="middle" font-size="9" fill="#9c8b7a">Examples: blinking, knee-jerk, withdrawing hand from heat</text>
+</svg>`,
+
+  'heart':`<svg viewBox="0 0 520 440" xmlns="http://www.w3.org/2000/svg" font-family="Sora,sans-serif" font-size="11">
+  <defs>
+    <marker id="arrH" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#c42020"/></marker>
+    <marker id="arrHB" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#1a5cb8"/></marker>
+  </defs>
+  <text x="260" y="22" text-anchor="middle" font-size="15" font-weight="700" fill="#1c1510">Human Heart — Chambers &amp; Blood Flow</text>
+  <text x="260" y="38" text-anchor="middle" font-size="10" fill="#9c8b7a">Karnataka SSLC Science — Life Processes (Transportation)</text>
+
+  <!-- Heart outline -->
+  <path d="M160,90 Q120,60 100,100 Q80,140 130,180 L260,300 L390,180 Q440,140 420,100 Q400,60 360,90 Q320,60 260,130 Q200,60 160,90Z" fill="#fdf0f0" stroke="#c42020" stroke-width="2.5"/>
+
+  <!-- Septum -->
+  <line x1="260" y1="130" x2="260" y2="295" stroke="#c42020" stroke-width="2" stroke-dasharray="5,3"/>
+
+  <!-- Right Atrium -->
+  <ellipse cx="190" cy="155" rx="55" ry="40" fill="#eff4fd" stroke="#1a5cb8" stroke-width="2"/>
+  <text x="190" y="152" text-anchor="middle" font-weight="700" fill="#1a5cb8">Right</text>
+  <text x="190" y="165" text-anchor="middle" font-weight="700" fill="#1a5cb8">Atrium</text>
+  <text x="190" y="177" text-anchor="middle" font-size="9" fill="#1a5cb8">(deoxygenated)</text>
+
+  <!-- Left Atrium -->
+  <ellipse cx="330" cy="155" rx="55" ry="40" fill="#fdf0f0" stroke="#c42020" stroke-width="2"/>
+  <text x="330" y="152" text-anchor="middle" font-weight="700" fill="#c42020">Left</text>
+  <text x="330" y="165" text-anchor="middle" font-weight="700" fill="#c42020">Atrium</text>
+  <text x="330" y="177" text-anchor="middle" font-size="9" fill="#c42020">(oxygenated)</text>
+
+  <!-- Right Ventricle -->
+  <path d="M135,192 Q130,240 170,275 L250,295 L250,210 Q220,200 190,195Z" fill="#d6e8fb" stroke="#1a5cb8" stroke-width="2"/>
+  <text x="185" y="243" text-anchor="middle" font-weight="700" fill="#1a5cb8">Right</text>
+  <text x="185" y="256" text-anchor="middle" font-weight="700" fill="#1a5cb8">Ventricle</text>
+
+  <!-- Left Ventricle -->
+  <path d="M385,192 Q390,240 350,275 L270,295 L270,210 Q300,200 330,195Z" fill="#fbdada" stroke="#c42020" stroke-width="2"/>
+  <text x="335" y="243" text-anchor="middle" font-weight="700" fill="#c42020">Left</text>
+  <text x="335" y="256" text-anchor="middle" font-weight="700" fill="#c42020">Ventricle</text>
+
+  <!-- Valves -->
+  <text x="225" y="200" text-anchor="middle" font-size="9" fill="#555">Tricuspid</text>
+  <text x="295" y="200" text-anchor="middle" font-size="9" fill="#555">Bicuspid</text>
+  <line x1="225" y1="193" x2="225" y2="210" stroke="#555" stroke-width="1.5"/>
+  <line x1="295" y1="193" x2="295" y2="210" stroke="#555" stroke-width="1.5"/>
+
+  <!-- Aorta -->
+  <path d="M340,120 Q370,80 380,55" fill="none" stroke="#c42020" stroke-width="5" stroke-linecap="round" marker-end="url(#arrH)"/>
+  <text x="390" y="50" font-size="10" fill="#c42020" font-weight="700">Aorta</text>
+  <text x="385" y="62" font-size="9" fill="#c42020">(to body)</text>
+
+  <!-- Pulmonary artery -->
+  <path d="M200,118 Q190,80 180,55" fill="none" stroke="#1a5cb8" stroke-width="4" stroke-linecap="round" marker-end="url(#arrHB)"/>
+  <text x="95" y="50" font-size="10" fill="#1a5cb8" font-weight="700">Pulmonary</text>
+  <text x="100" y="62" font-size="10" fill="#1a5cb8" font-weight="700">Artery</text>
+  <text x="100" y="73" font-size="9" fill="#1a5cb8">(to lungs)</text>
+
+  <!-- Vena cava -->
+  <path d="M138,140 Q100,130 75,130" fill="none" stroke="#1a5cb8" stroke-width="4" stroke-linecap="round"/>
+  <text x="30" y="125" font-size="9" fill="#1a5cb8" font-weight="700">Vena Cava</text>
+  <text x="25" y="137" font-size="9" fill="#1a5cb8">(from body)</text>
+
+  <!-- Pulmonary vein -->
+  <path d="M385,140 Q420,128 445,128" fill="none" stroke="#c42020" stroke-width="4" stroke-linecap="round"/>
+  <text x="448" y="123" font-size="9" fill="#c42020" font-weight="700">Pulmonary</text>
+  <text x="453" y="135" font-size="9" fill="#c42020" font-weight="700">Vein</text>
+  <text x="450" y="147" font-size="9" fill="#c42020">(from lungs)</text>
+
+  <!-- Key -->
+  <rect x="30" y="325" width="460" height="100" rx="8" fill="#faf7f3" stroke="#e2d9ce" stroke-width="1"/>
+  <text x="260" y="342" text-anchor="middle" font-size="10" font-weight="700" fill="#3d3028">Key Facts for SSLC Exam</text>
+  <rect x="42" y="350" width="10" height="10" fill="#eff4fd" stroke="#1a5cb8"/>
+  <text x="58" y="360" font-size="9.5" fill="#555">Right side carries deoxygenated blood (blue)</text>
+  <rect x="42" y="366" width="10" height="10" fill="#fbdada" stroke="#c42020"/>
+  <text x="58" y="376" font-size="9.5" fill="#555">Left side carries oxygenated blood (red) — thicker walls</text>
+  <text x="42" y="391" font-size="9.5" fill="#555">● Double circulation: Pulmonary (heart↔lungs) + Systemic (heart↔body)</text>
+  <text x="42" y="406" font-size="9.5" fill="#555">● Valves prevent backflow. SA Node = natural pacemaker. Heart beat ≈ 72/min</text>
+  <text x="42" y="420" font-size="9.5" fill="#555">● Arteries carry blood away from heart; Veins carry blood towards heart</text>
+</svg>`,
+
+  'circuit':`<svg viewBox="0 0 520 360" xmlns="http://www.w3.org/2000/svg" font-family="Sora,sans-serif" font-size="11">
+  <text x="260" y="22" text-anchor="middle" font-size="15" font-weight="700" fill="#1c1510">Electric Circuits — Series &amp; Parallel</text>
+  <text x="260" y="38" text-anchor="middle" font-size="10" fill="#9c8b7a">Karnataka SSLC Science — Electricity (Ch 12)</text>
+  <!-- SERIES -->
+  <text x="130" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#e8720c">SERIES CIRCUIT</text>
+  <!-- wires -->
+  <polyline points="30,100 30,160 490,160 490,100 30,100" fill="none" stroke="#333" stroke-width="2.5"/>
+  <!-- Battery -->
+  <line x1="30" y1="115" x2="30" y2="145" stroke="#333" stroke-width="4"/>
+  <line x1="22" y1="120" x2="38" y2="120" stroke="#333" stroke-width="3"/>
+  <line x1="25" y1="130" x2="35" y2="130" stroke="#333" stroke-width="1.5"/>
+  <line x1="22" y1="140" x2="38" y2="140" stroke="#333" stroke-width="3"/>
+  <text x="30" y="175" text-anchor="middle" font-size="9" fill="#555">Battery V</text>
+  <!-- R1 series -->
+  <rect x="100" y="148" width="60" height="24" rx="3" fill="#fff4eb" stroke="#e8720c" stroke-width="2"/>
+  <text x="130" y="164" text-anchor="middle" font-weight="700" fill="#e8720c">R₁</text>
+  <text x="130" y="178" text-anchor="middle" font-size="9" fill="#555">2 Ω</text>
+  <!-- R2 series -->
+  <rect x="220" y="148" width="60" height="24" rx="3" fill="#fff4eb" stroke="#e8720c" stroke-width="2"/>
+  <text x="250" y="164" text-anchor="middle" font-weight="700" fill="#e8720c">R₂</text>
+  <text x="250" y="178" text-anchor="middle" font-size="9" fill="#555">3 Ω</text>
+  <!-- R3 series -->
+  <rect x="340" y="148" width="60" height="24" rx="3" fill="#fff4eb" stroke="#e8720c" stroke-width="2"/>
+  <text x="370" y="164" text-anchor="middle" font-weight="700" fill="#e8720c">R₃</text>
+  <text x="370" y="178" text-anchor="middle" font-size="9" fill="#555">5 Ω</text>
+  <!-- Ammeter series -->
+  <circle cx="460" cy="160" r="13" fill="white" stroke="#1a7a3c" stroke-width="2"/>
+  <text x="460" y="164" text-anchor="middle" font-size="10" font-weight="700" fill="#1a7a3c">A</text>
+  <text x="460" y="178" text-anchor="middle" font-size="9" fill="#555">Same I</text>
+  <!-- formula box series -->
+  <rect x="60" y="188" width="300" height="28" rx="5" fill="#faf7f3" stroke="#e2d9ce"/>
+  <text x="80" y="202" font-size="10" fill="#555" font-weight="600">R_total = R₁+R₂+R₃ = 10 Ω</text>
+  <text x="80" y="212" font-size="9" fill="#555">Same current (I) flows. Different voltages across each R.</text>
+
+  <!-- PARALLEL -->
+  <text x="130" y="238" text-anchor="middle" font-size="12" font-weight="700" fill="#1a5cb8">PARALLEL CIRCUIT</text>
+  <!-- outer wires -->
+  <line x1="30" y1="270" x2="490" y2="270" stroke="#333" stroke-width="2.5"/>
+  <line x1="30" y1="330" x2="490" y2="330" stroke="#333" stroke-width="2.5"/>
+  <!-- Battery parallel -->
+  <line x1="30" y1="278" x2="30" y2="322" stroke="#333" stroke-width="4"/>
+  <line x1="22" y1="283" x2="38" y2="283" stroke="#333" stroke-width="3"/>
+  <line x1="25" y1="293" x2="35" y2="293" stroke="#333" stroke-width="1.5"/>
+  <line x1="22" y1="313" x2="38" y2="313" stroke="#333" stroke-width="3"/>
+  <!-- branches -->
+  <line x1="130" y1="270" x2="130" y2="330" stroke="#e8720c" stroke-width="2"/>
+  <line x1="250" y1="270" x2="250" y2="330" stroke="#e8720c" stroke-width="2"/>
+  <line x1="370" y1="270" x2="370" y2="330" stroke="#e8720c" stroke-width="2"/>
+  <!-- R labels parallel -->
+  <rect x="110" y="291" width="40" height="18" rx="3" fill="#fff4eb" stroke="#e8720c" stroke-width="1.5"/>
+  <text x="130" y="304" text-anchor="middle" font-size="10" font-weight="700" fill="#e8720c">R₁</text>
+  <rect x="230" y="291" width="40" height="18" rx="3" fill="#fff4eb" stroke="#e8720c" stroke-width="1.5"/>
+  <text x="250" y="304" text-anchor="middle" font-size="10" font-weight="700" fill="#e8720c">R₂</text>
+  <rect x="350" y="291" width="40" height="18" rx="3" fill="#fff4eb" stroke="#e8720c" stroke-width="1.5"/>
+  <text x="370" y="304" text-anchor="middle" font-size="10" font-weight="700" fill="#e8720c">R₃</text>
+  <!-- Ammeter parallel -->
+  <circle cx="460" cy="300" r="13" fill="white" stroke="#1a7a3c" stroke-width="2"/>
+  <text x="460" y="304" text-anchor="middle" font-size="10" font-weight="700" fill="#1a7a3c">A</text>
+  <!-- formula parallel -->
+  <text x="60" y="348" font-size="10" fill="#1a5cb8" font-weight="600">1/R = 1/R₁+1/R₂+1/R₃  |  Same voltage (V). Different currents.</text>
+</svg>`,
+
+  'plant cell':`<svg viewBox="0 0 520 420" xmlns="http://www.w3.org/2000/svg" font-family="Sora,sans-serif" font-size="11">
+  <defs>
+    <marker id="arrP" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#555"/></marker>
+  </defs>
+  <text x="260" y="22" text-anchor="middle" font-size="15" font-weight="700" fill="#1c1510">Plant Cell — Labeled Diagram</text>
+  <text x="260" y="38" text-anchor="middle" font-size="10" fill="#9c8b7a">Karnataka SSLC Science — Cell Structure</text>
+  <!-- Cell wall -->
+  <rect x="90" y="55" width="300" height="290" rx="18" fill="none" stroke="#6b2db8" stroke-width="6"/>
+  <text x="395" y="100" font-size="10" fill="#6b2db8" font-weight="700">Cell Wall</text>
+  <text x="395" y="112" font-size="9" fill="#6b2db8">(rigid, cellulose)</text>
+  <line x1="393" y1="94" x2="390" y2="80" stroke="#6b2db8" stroke-width="1" marker-end="url(#arrP)"/>
+  <!-- Cell membrane -->
+  <rect x="100" y="64" width="280" height="272" rx="12" fill="#fffbf0" stroke="#d4900a" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="100" y="354" font-size="9" fill="#d4900a" font-weight="600">Cell Membrane (selectively permeable)</text>
+  <!-- Vacuole -->
+  <ellipse cx="245" cy="195" rx="90" ry="75" fill="#eff4fd" stroke="#1a5cb8" stroke-width="2"/>
+  <text x="245" y="190" text-anchor="middle" font-size="10" font-weight="700" fill="#1a5cb8">Large Central</text>
+  <text x="245" y="203" text-anchor="middle" font-size="10" font-weight="700" fill="#1a5cb8">Vacuole</text>
+  <text x="245" y="216" text-anchor="middle" font-size="9" fill="#1a5cb8">(cell sap, turgor)</text>
+  <!-- Nucleus -->
+  <ellipse cx="155" cy="130" rx="32" ry="25" fill="#fde8c8" stroke="#e8720c" stroke-width="2"/>
+  <ellipse cx="155" cy="130" rx="14" ry="11" fill="#ffb347" stroke="#e8720c" stroke-width="1.5"/>
+  <text x="108" y="90" font-size="10" fill="#e8720c" font-weight="700">Nucleus</text>
+  <text x="110" y="102" font-size="9" fill="#e8720c">(nucleolus inside)</text>
+  <line x1="130" y1="98" x2="143" y2="115" stroke="#e8720c" stroke-width="1" marker-end="url(#arrP)"/>
+  <!-- Chloroplast -->
+  <ellipse cx="320" cy="115" rx="28" ry="16" fill="#c8f0c8" stroke="#1a7a3c" stroke-width="2"/>
+  <line x1="295" y1="115" x2="345" y2="115" stroke="#1a7a3c" stroke-width="1"/>
+  <text x="358" y="108" font-size="10" fill="#1a7a3c" font-weight="700">Chloroplast</text>
+  <text x="358" y="120" font-size="9" fill="#1a7a3c">(photosynthesis)</text>
+  <ellipse cx="316" cy="145" rx="22" ry="13" fill="#c8f0c8" stroke="#1a7a3c" stroke-width="1.5"/>
+  <!-- Mitochondria -->
+  <ellipse cx="155" cy="245" rx="26" ry="14" fill="#fde8c8" stroke="#e8720c" stroke-width="1.5"/>
+  <path d="M140,245 Q148,238 155,245 Q162,252 170,245" fill="none" stroke="#e8720c" stroke-width="1"/>
+  <text x="108" y="270" font-size="10" fill="#e8720c" font-weight="700">Mitochondria</text>
+  <text x="108" y="282" font-size="9" fill="#e8720c">(powerhouse)</text>
+  <line x1="134" y1="268" x2="143" y2="255" stroke="#e8720c" stroke-width="1" marker-end="url(#arrP)"/>
+  <!-- ER -->
+  <path d="M185,160 Q195,168 185,176 Q195,184 185,192" fill="none" stroke="#9c8b7a" stroke-width="2"/>
+  <text x="118" y="175" font-size="9" fill="#9c8b7a" font-weight="600">Endoplasmic</text>
+  <text x="122" y="186" font-size="9" fill="#9c8b7a" font-weight="600">Reticulum</text>
+  <line x1="180" y1="176" x2="188" y2="176" stroke="#9c8b7a" stroke-width="1" marker-end="url(#arrP)"/>
+  <!-- Golgi -->
+  <path d="M320" y1="170" d="M318,170 Q330,165 342,170"/>
+  <path d="M318,170 Q330,165 342,170" fill="none" stroke="#6b2db8" stroke-width="2"/>
+  <path d="M316,178 Q330,173 344,178" fill="none" stroke="#6b2db8" stroke-width="2"/>
+  <path d="M314,186 Q330,181 346,186" fill="none" stroke="#6b2db8" stroke-width="2"/>
+  <text x="355" y="175" font-size="9" fill="#6b2db8" font-weight="600">Golgi</text>
+  <text x="352" y="186" font-size="9" fill="#6b2db8" font-weight="600">Apparatus</text>
+  <!-- Key box -->
+  <rect x="30" y="358" width="460" height="50" rx="8" fill="#faf7f3" stroke="#e2d9ce" stroke-width="1"/>
+  <text x="260" y="374" text-anchor="middle" font-size="10" font-weight="700" fill="#3d3028">Plant Cell vs Animal Cell — Key Differences</text>
+  <text x="42" y="390" font-size="9.5" fill="#1a7a3c">Plant ONLY: Cell wall ✓  Large vacuole ✓  Chloroplasts ✓</text>
+  <text x="42" y="403" font-size="9.5" fill="#c42020">Animal ONLY: Centrioles ✓  Lysosomes (more) ✓  No cell wall ✗</text>
+</svg>`,
+
+  'water cycle':`<svg viewBox="0 0 520 380" xmlns="http://www.w3.org/2000/svg" font-family="Sora,sans-serif" font-size="11">
+  <defs>
+    <marker id="arrW" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#1a5cb8"/></marker>
+    <marker id="arrWR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#e8720c"/></marker>
+  </defs>
+  <text x="260" y="22" text-anchor="middle" font-size="15" font-weight="700" fill="#1c1510">Water Cycle (Hydrological Cycle)</text>
+  <text x="260" y="38" text-anchor="middle" font-size="10" fill="#9c8b7a">Karnataka SSLC Science — Natural Resources</text>
+  <!-- Sky/atmosphere -->
+  <rect x="30" y="48" width="460" height="150" rx="10" fill="#eff4fd" stroke="#1a5cb8" stroke-width="1" stroke-dasharray="6,3"/>
+  <text x="260" y="65" text-anchor="middle" font-size="9" fill="#1a5cb8">ATMOSPHERE</text>
+  <!-- Cloud 1 (condensation) -->
+  <ellipse cx="180" cy="115" rx="65" ry="35" fill="white" stroke="#1a5cb8" stroke-width="2"/>
+  <ellipse cx="150" cy="122" rx="40" ry="28" fill="white" stroke="#1a5cb8" stroke-width="2"/>
+  <ellipse cx="210" cy="120" rx="45" ry="30" fill="white" stroke="#1a5cb8" stroke-width="2"/>
+  <text x="180" y="118" text-anchor="middle" font-weight="700" fill="#1a5cb8">CONDENSATION</text>
+  <text x="180" y="130" text-anchor="middle" font-size="9" fill="#1a5cb8">Water vapour → droplets</text>
+  <!-- Cloud 2 (precipitation) -->
+  <ellipse cx="370" cy="100" rx="55" ry="30" fill="#d6e8fb" stroke="#1a5cb8" stroke-width="2"/>
+  <ellipse cx="345" cy="108" rx="35" ry="24" fill="#d6e8fb" stroke="#1a5cb8" stroke-width="2"/>
+  <ellipse cx="395" cy="106" rx="38" ry="26" fill="#d6e8fb" stroke="#1a5cb8" stroke-width="2"/>
+  <text x="370" y="103" text-anchor="middle" font-weight="700" fill="#1a5cb8">PRECIPITATION</text>
+  <!-- Rain drops -->
+  <text x="350" y="140" font-size="16" fill="#1a5cb8">💧💧💧</text>
+  <!-- Ground -->
+  <rect x="30" y="240" width="460" height="60" rx="6" fill="#edf7f2" stroke="#1a7a3c" stroke-width="1.5"/>
+  <text x="120" y="262" font-size="10" fill="#1a7a3c" font-weight="700">LAND / SOIL</text>
+  <path d="M60,248 Q130,240 200,248 Q270,256 340,248 Q410,240 480,248" fill="none" stroke="#1a7a3c" stroke-width="1" stroke-dasharray="3,2"/>
+  <!-- Ocean/River -->
+  <rect x="30" y="300" width="460" height="55" rx="6" fill="#eff4fd" stroke="#1a5cb8" stroke-width="2"/>
+  <text x="260" y="322" text-anchor="middle" font-size="12" font-weight="700" fill="#1a5cb8">OCEAN / WATER BODIES / RIVERS</text>
+  <text x="260" y="338" text-anchor="middle" font-size="9" fill="#1a5cb8">Lakes, Ponds, Groundwater</text>
+  <!-- Evaporation arrow -->
+  <path d="M100,300 Q80,240 90,170 Q95,145 115,128" fill="none" stroke="#e8720c" stroke-width="3" stroke-dasharray="6,3" marker-end="url(#arrWR)"/>
+  <text x="30" y="215" font-size="10" fill="#e8720c" font-weight="700">EVAPORATION</text>
+  <text x="32" y="227" font-size="9" fill="#e8720c">(sun heats water)</text>
+  <!-- Transpiration arrow -->
+  <path d="M220,240 Q210,190 195,148" fill="none" stroke="#1a7a3c" stroke-width="2.5" stroke-dasharray="4,3" marker-end="url(#arrW)"/>
+  <text x="222" y="195" font-size="9" fill="#1a7a3c" font-weight="600">Transpiration</text>
+  <text x="224" y="207" font-size="9" fill="#1a7a3c">(from plants)</text>
+  <!-- Runoff arrow -->
+  <path d="M390,200 Q430,230 450,300" fill="none" stroke="#1a5cb8" stroke-width="2.5" marker-end="url(#arrW)"/>
+  <text x="430" y="250" font-size="9" fill="#1a5cb8" font-weight="600">Surface</text>
+  <text x="432" y="261" font-size="9" fill="#1a5cb8" font-weight="600">Runoff</text>
+  <!-- Cloud transport arrow -->
+  <path d="M245,105 Q300,90 318,98" fill="none" stroke="#1a5cb8" stroke-width="2" marker-end="url(#arrW)"/>
+  <text x="275" y="86" font-size="9" fill="#1a5cb8">Wind transport</text>
+  <!-- Mountain -->
+  <polygon points="310,240 360,160 410,240" fill="#d4c9b8" stroke="#9c8b7a" stroke-width="1.5"/>
+  <polygon points="355,170 360,155 365,170" fill="white" stroke="#9c8b7a" stroke-width="1"/>
+  <text x="360" y="230" text-anchor="middle" font-size="9" fill="#555">Mountain</text>
+  <!-- Key -->
+  <text x="42" y="358" font-size="9" fill="#e8720c">━━</text><text x="58" y="358" font-size="9" fill="#555"> Evaporation (liquid→vapour, needs solar energy)</text>
+  <text x="42" y="371" font-size="9" fill="#1a5cb8">━━</text><text x="58" y="371" font-size="9" fill="#555"> Condensation → Precipitation (rain/snow/hail)</text>
+</svg>`,
+
+  'triangle':`<svg viewBox="0 0 520 400" xmlns="http://www.w3.org/2000/svg" font-family="Sora,sans-serif" font-size="11">
+  <defs>
+    <marker id="arrT" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#e8720c"/></marker>
+  </defs>
+  <text x="260" y="22" text-anchor="middle" font-size="15" font-weight="700" fill="#1c1510">Triangles — BPT &amp; Pythagoras Theorem</text>
+  <text x="260" y="38" text-anchor="middle" font-size="10" fill="#9c8b7a">Karnataka SSLC Maths — Chapter 6 (9 marks — HIGHEST)</text>
+  <!-- BPT diagram -->
+  <text x="130" y="60" text-anchor="middle" font-size="12" font-weight="700" fill="#e8720c">Basic Proportionality Theorem (BPT)</text>
+  <!-- Main triangle ABC -->
+  <polygon points="130,230 50,340 210,340" fill="#fff4eb" stroke="#e8720c" stroke-width="2.5"/>
+  <!-- Labels -->
+  <text x="130" y="222" text-anchor="middle" font-weight="700" fill="#e8720c" font-size="13">A</text>
+  <text x="38" y="355" font-weight="700" fill="#e8720c" font-size="13">B</text>
+  <text x="214" y="355" font-weight="700" fill="#e8720c" font-size="13">C</text>
+  <!-- DE line parallel to BC -->
+  <line x1="85" y1="285" x2="175" y2="285" stroke="#1a5cb8" stroke-width="2.5" stroke-dasharray="none"/>
+  <text x="80" y="280" text-anchor="end" font-weight="700" fill="#1a5cb8">D</text>
+  <text x="180" y="280" font-weight="700" fill="#1a5cb8">E</text>
+  <!-- DE || BC label -->
+  <text x="130" y="275" text-anchor="middle" font-size="9" fill="#1a5cb8">DE ∥ BC</text>
+  <!-- Tick marks for AD/DB -->
+  <text x="60" y="260" font-size="9" fill="#555">AD</text>
+  <text x="60" y="310" font-size="9" fill="#555">DB</text>
+  <!-- Theorem box -->
+  <rect x="30" y="358" width="210" height="32" rx="6" fill="#faf7f3" stroke="#e8720c"/>
+  <text x="135" y="372" text-anchor="middle" font-size="10" font-weight="700" fill="#e8720c">If DE ∥ BC, then:</text>
+  <text x="135" y="384" text-anchor="middle" font-size="11" font-weight="700" fill="#1a5cb8">AD/DB = AE/EC</text>
+
+  <!-- Pythagoras diagram -->
+  <text x="390" y="60" text-anchor="middle" font-size="12" font-weight="700" fill="#1a7a3c">Pythagoras Theorem</text>
+  <!-- Right triangle -->
+  <polygon points="310,340 310,160 470,340" fill="#edf7f2" stroke="#1a7a3c" stroke-width="2.5"/>
+  <!-- Right angle box -->
+  <rect x="310" y="320" width="20" height="20" fill="none" stroke="#1a7a3c" stroke-width="2"/>
+  <!-- Labels -->
+  <text x="305" y="155" text-anchor="end" font-weight="700" fill="#1a7a3c" font-size="13">A</text>
+  <text x="300" y="348" text-anchor="end" font-weight="700" fill="#1a7a3c" font-size="13">B</text>
+  <text x="476" y="348" font-weight="700" fill="#1a7a3c" font-size="13">C</text>
+  <!-- Side labels -->
+  <text x="295" y="255" text-anchor="end" font-size="12" font-weight="700" fill="#e8720c">c (hyp)</text>
+  <text x="390" y="355" text-anchor="middle" font-size="12" font-weight="700" fill="#1a5cb8">a</text>
+  <text x="473" y="255" font-size="12" font-weight="700" fill="#6b2db8">b</text>
+  <!-- 90 degree label -->
+  <text x="338" y="318" font-size="10" fill="#1a7a3c" font-weight="700">90°</text>
+  <!-- Theorem box Pythagoras -->
+  <rect x="285" y="358" width="200" height="32" rx="6" fill="#faf7f3" stroke="#1a7a3c"/>
+  <text x="385" y="372" text-anchor="middle" font-size="10" font-weight="700" fill="#1a7a3c">Pythagoras:</text>
+  <text x="385" y="384" text-anchor="middle" font-size="13" font-weight="700" fill="#c42020">a² + b² = c²</text>
+
+  <!-- Similarity criteria banner -->
+  <rect x="30" y="75" width="460" height="58" rx="8" fill="#f3eefb" stroke="#6b2db8" stroke-width="1"/>
+  <text x="260" y="92" text-anchor="middle" font-size="10" font-weight="700" fill="#6b2db8">Similarity Criteria — Triangles are similar if:</text>
+  <text x="80" y="108" font-size="10" fill="#555">● AA (Angle-Angle): Two pairs of equal angles</text>
+  <text x="80" y="122" font-size="10" fill="#555">● SSS: All 3 sides proportional  ● SAS: Two sides proportional + included angle equal</text>
+  <text x="260" y="130" text-anchor="middle" font-size="9" fill="#6b2db8">Area ratio of similar △s = (ratio of corresponding sides)²</text>
+</svg>`
+};
+
+// ── GRAPH / PLOTTER ────────────────────────────────────────────────
+// Detects requests like "graph y=x^2", "plot x=-2, y=1", "draw x+y=5"
+function isGraphRequest(q){
+  return /\b(graph|plot|draw|sketch|show)\b.*(\bx\b|\by\b)|y\s*=|x\s*=|\bf\s*\(x\)|equation.*graph|graph.*equation/i.test(q)
+    || /^[\s,;]*([xy]\s*[=+\-*/^]|[+\-]?\d*\s*x|[+\-]?\d*\s*y)/i.test(q);
+}
+
+// Parse a comma/semicolon separated list of equations from the query
+function parseEquations(query){
+  // Strip leading draw/graph/plot verb
+  let raw = query.replace(/^(graph|plot|draw|sketch|show(\s+me)?)\s*/i,'').trim();
+  // Split on commas or semicolons or "and"
+  const parts = raw.split(/\s*[,;]\s*|\s+and\s+/i).map(s=>s.trim()).filter(Boolean);
+  const eqs = [];
+  for(const part of parts){
+    // Accept: y=..., x=..., f(x)=..., or bare expression treated as y=expr
+    const m = part.match(/^(?:y|f\s*\(x\))\s*=\s*(.+)$/i);
+    const mx = part.match(/^x\s*=\s*(.+)$/i);
+    if(m)  eqs.push({type:'y', expr: m[1].trim()});
+    else if(mx) eqs.push({type:'x', expr: mx[1].trim()});
+    else if(/x/.test(part)||/\d/.test(part)) eqs.push({type:'y', expr: part});
+  }
+  return eqs;
+}
+
+// Safely evaluate a math expression with a given x value
+function evalExpr(expr, x){
+  // Normalise: 2x → 2*x, x2 → x^2 → Math.pow, etc.
+  let e = expr
+    .replace(/\^/g,'**')
+    .replace(/(\d)(x)/gi,'$1*x')
+    .replace(/(x)(\d)/gi,'x**$2')
+    .replace(/\bsqrt\b/gi,'Math.sqrt')
+    .replace(/\babs\b/gi,'Math.abs')
+    .replace(/\bsin\b/gi,'Math.sin')
+    .replace(/\bcos\b/gi,'Math.cos')
+    .replace(/\btan\b/gi,'Math.tan')
+    .replace(/\bpi\b/gi,'Math.PI')
+    .replace(/\be\b/g,'Math.E')
+    .replace(/\bln\b/gi,'Math.log')
+    .replace(/\blog\b/gi,'Math.log10');
+  try{
+    // eslint-disable-next-line no-new-func
+    return Function('x','return '+e)(x);
+  }catch(err){ return NaN; }
+}
+
+// Render a graph into the diagram panel using an HTML canvas
+function renderGraph(query, equations){
+  const out=document.getElementById('diagramOutput');if(!out)return;
+  const homeBtn=document.getElementById('diagramHomeBtn');
+  if(homeBtn) homeBtn.style.display='inline-flex';
+
+  const COLORS=['#e8720c','#1a5cb8','#1a7a3c','#c42020','#6b2db8','#d4900a'];
+  const W=460, H=340, PAD=44;
+
+  // Determine axis range — scan all y-equations first
+  let ymin=-10, ymax=10, xmin=-10, xmax=10;
+  // Check for constant x= lines to adjust range
+  for(const eq of equations){
+    if(eq.type==='x'){
+      const v=parseFloat(eq.expr);
+      if(!isNaN(v)){ xmin=Math.min(xmin,v-2);xmax=Math.max(xmax,v+2); }
+    }
+  }
+  // Scan y values
+  const steps=300;
+  const xs=[]; for(let i=0;i<=steps;i++) xs.push(xmin+(xmax-xmin)*i/steps);
+  let autoYMin=Infinity, autoYMax=-Infinity;
+  for(const eq of equations){
+    if(eq.type!=='y') continue;
+    for(const x of xs){
+      const y=evalExpr(eq.expr,x);
+      if(isFinite(y)){autoYMin=Math.min(autoYMin,y);autoYMax=Math.max(autoYMax,y);}
+    }
+  }
+  if(isFinite(autoYMin)&&isFinite(autoYMax)&&autoYMax>autoYMin){
+    const margin=(autoYMax-autoYMin)*0.15||1;
+    ymin=Math.max(-50,autoYMin-margin);
+    ymax=Math.min(50,autoYMax+margin);
+  }
+  // Nice round bounds
+  function niceRange(v){return Math.ceil(Math.abs(v)/5)*5*(v<0?-1:1);}
+  ymin=niceRange(ymin); ymax=niceRange(ymax);
+
+  // Canvas helpers
+  const toCanvasX = x => PAD + (x-xmin)/(xmax-xmin)*(W-2*PAD);
+  const toCanvasY = y => (H-PAD) - (y-ymin)/(ymax-ymin)*(H-2*PAD);
+
+  // Build legend html
+  const legendHtml = equations.map((eq,i)=>{
+    const label = eq.type==='x' ? `x = ${eq.expr}` : `y = ${eq.expr}`;
+    return `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px">
+      <span style="display:inline-block;width:18px;height:3px;background:${COLORS[i%COLORS.length]};border-radius:2px"></span>
+      <span style="font-size:11px;font-weight:600;color:var(--ink2)">${escHtml(label)}</span>
+    </span>`;
+  }).join('');
+
+  out.innerHTML=
+    `<div class="diagram-result">
+      <div class="diagram-result-title">📈 ${escHtml(query)}</div>
+      <div style="background:#fff;border-radius:12px;padding:10px;border:1px solid var(--border);overflow:auto">
+        <canvas id="graphCanvas" width="${W}" height="${H}" style="display:block;max-width:100%"></canvas>
+        <div style="padding:6px 4px 2px;display:flex;flex-wrap:wrap">${legendHtml}</div>
+      </div>
+      <div class="diagram-actions">
+        <button class="d-action-btn" onclick="showDiagramHome()">🏠 Home</button>
+        <button class="d-action-btn" onclick="generateDiagram(${JSON.stringify(query)})">🔄 Redraw</button>
+      </div>
+    </div>`;
+
+  // Draw on canvas after DOM updates
+  requestAnimationFrame(()=>{
+    const canvas=document.getElementById('graphCanvas');
+    if(!canvas) return;
+    const ctx=canvas.getContext('2d');
+
+    // Background
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+
+    // Grid lines
+    ctx.strokeStyle='#e8e4de'; ctx.lineWidth=1;
+    const xStep=(xmax-xmin)/10, yStep=(ymax-ymin)/10;
+    for(let gx=Math.ceil(xmin/xStep)*xStep; gx<=xmax; gx+=xStep){
+      const cx=toCanvasX(gx);
+      ctx.beginPath();ctx.moveTo(cx,PAD);ctx.lineTo(cx,H-PAD);ctx.stroke();
+    }
+    for(let gy=Math.ceil(ymin/yStep)*yStep; gy<=ymax; gy+=yStep){
+      const cy=toCanvasY(gy);
+      ctx.beginPath();ctx.moveTo(PAD,cy);ctx.lineTo(W-PAD,cy);ctx.stroke();
+    }
+
+    // Axes
+    ctx.strokeStyle='#1c1510'; ctx.lineWidth=2;
+    // X axis
+    const zeroY=toCanvasY(0);
+    if(zeroY>=PAD && zeroY<=H-PAD){
+      ctx.beginPath();ctx.moveTo(PAD,zeroY);ctx.lineTo(W-PAD,zeroY);ctx.stroke();
+      // arrowhead
+      ctx.beginPath();ctx.moveTo(W-PAD,zeroY);ctx.lineTo(W-PAD-8,zeroY-4);ctx.lineTo(W-PAD-8,zeroY+4);ctx.closePath();ctx.fillStyle='#1c1510';ctx.fill();
+    }
+    // Y axis
+    const zeroX=toCanvasX(0);
+    if(zeroX>=PAD && zeroX<=W-PAD){
+      ctx.beginPath();ctx.moveTo(zeroX,H-PAD);ctx.lineTo(zeroX,PAD);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(zeroX,PAD);ctx.lineTo(zeroX-4,PAD+8);ctx.lineTo(zeroX+4,PAD+8);ctx.closePath();ctx.fill();
+    }
+
+    // Axis labels
+    ctx.fillStyle='#6b5a48'; ctx.font='11px Arial,sans-serif'; ctx.textAlign='center';
+    for(let gx=Math.ceil(xmin); gx<=xmax; gx++){
+      if(gx===0) continue;
+      const cx=toCanvasX(gx);
+      if(cx<PAD+4||cx>W-PAD-4) continue;
+      const cy=zeroY>=PAD&&zeroY<=H-PAD ? zeroY+14 : H-PAD+14;
+      ctx.fillText(gx,cx,cy);
+      // tick
+      ctx.strokeStyle='#9c8b7a';ctx.lineWidth=1;
+      const ty=zeroY>=PAD&&zeroY<=H-PAD?zeroY:H-PAD;
+      ctx.beginPath();ctx.moveTo(cx,ty-3);ctx.lineTo(cx,ty+3);ctx.stroke();
+    }
+    ctx.textAlign='right';
+    for(let gy=Math.ceil(ymin); gy<=ymax; gy++){
+      if(gy===0) continue;
+      const cy=toCanvasY(gy);
+      if(cy<PAD+4||cy>H-PAD-4) continue;
+      const cx=zeroX>=PAD&&zeroX<=W-PAD ? zeroX-6 : PAD-6;
+      ctx.fillText(gy,cx,cy+4);
+      ctx.strokeStyle='#9c8b7a';ctx.lineWidth=1;
+      const tx=zeroX>=PAD&&zeroX<=W-PAD?zeroX:PAD;
+      ctx.beginPath();ctx.moveTo(tx-3,cy);ctx.lineTo(tx+3,cy);ctx.stroke();
+    }
+    // Axis name labels
+    ctx.fillStyle='#3d3028'; ctx.font='bold 12px Arial'; ctx.textAlign='left';
+    ctx.fillText('x',W-PAD+6, zeroY>=PAD&&zeroY<=H-PAD ? zeroY+4 : H-PAD+4);
+    ctx.textAlign='center';
+    ctx.fillText('y', zeroX>=PAD&&zeroX<=W-PAD ? zeroX : PAD, PAD-8);
+
+    // Origin label
+    if(zeroX>=PAD&&zeroX<=W-PAD&&zeroY>=PAD&&zeroY<=H-PAD){
+      ctx.fillStyle='#9c8b7a'; ctx.font='10px Arial'; ctx.textAlign='right';
+      ctx.fillText('O',zeroX-4,zeroY+12);
+    }
+
+    // Plot each equation
+    equations.forEach((eq,ei)=>{
+      const col=COLORS[ei%COLORS.length];
+      ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.lineJoin='round';
+
+      if(eq.type==='x'){
+        // Vertical line x=const
+        const v=evalExpr(eq.expr,0);
+        if(isFinite(v)){
+          const cx=toCanvasX(v);
+          ctx.setLineDash([6,4]);
+          ctx.beginPath();ctx.moveTo(cx,PAD);ctx.lineTo(cx,H-PAD);ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      } else {
+        // y = f(x) — plot by sampling
+        ctx.beginPath();
+        let penDown=false;
+        const N=600;
+        for(let i=0;i<=N;i++){
+          const x=xmin+(xmax-xmin)*i/N;
+          const y=evalExpr(eq.expr,x);
+          const cx=toCanvasX(x);
+          const cy=toCanvasY(y);
+          if(!isFinite(y)||cy<PAD-10||cy>H-PAD+10){
+            penDown=false; continue;
+          }
+          if(!penDown){ctx.moveTo(cx,cy);penDown=true;}
+          else ctx.lineTo(cx,cy);
+        }
+        ctx.stroke();
+
+        // Mark intercepts
+        ctx.fillStyle=col;
+        // y-intercept (x=0)
+        const y0=evalExpr(eq.expr,0);
+        if(isFinite(y0)&&y0>=ymin&&y0<=ymax){
+          const cx=toCanvasX(0), cy=toCanvasY(y0);
+          ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle='#333';ctx.font='10px Arial';ctx.textAlign='left';
+          ctx.fillText(`(0,${Math.round(y0*100)/100})`,cx+6,cy-4);
+          ctx.fillStyle=col;
+        }
+        // x-intercepts (where y≈0) — simple scan
+        let prevY=evalExpr(eq.expr,xmin);
+        for(let i=1;i<=N;i++){
+          const x=xmin+(xmax-xmin)*i/N;
+          const y=evalExpr(eq.expr,x);
+          if(isFinite(prevY)&&isFinite(y)&&prevY*y<0){
+            // Root between x-step and x
+            const xRoot=x-(xmax-xmin)/N*y/(y-prevY);
+            const cx=toCanvasX(xRoot), cy=toCanvasY(0);
+            if(cy>=PAD&&cy<=H-PAD){
+              ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();
+              ctx.fillStyle='#333';ctx.font='10px Arial';ctx.textAlign='center';
+              ctx.fillText(`(${Math.round(xRoot*100)/100},0)`,cx,cy+14);
+              ctx.fillStyle=col;
+            }
+          }
+          prevY=y;
+        }
+      }
+    });
+  });
+}
+
+function getSvgKey(query){
+  const q=query.toLowerCase();
+  if(/nephron|kidney/.test(q)) return 'nephron';
+  if(/reflex|nervous/.test(q)) return 'reflex arc';
+  if(/heart|cardiac|chamber/.test(q)) return 'heart';
+  if(/circuit|series|parallel|resistor/.test(q)) return 'circuit';
+  if(/plant.?cell|cell.?organelle/.test(q)) return 'plant cell';
+  if(/water.?cycle|hydro|evapor|precipit/.test(q)) return 'water cycle';
+  if(/triangle|bpt|thales|pythag/.test(q)) return 'triangle';
+  return null;
+}
+
+const DIAGRAM_QUICK=[
+  {icon:'🔬',label:'Nephron',       query:'nephron structure kidney'},
+  {icon:'🧠',label:'Reflex Arc',    query:'reflex arc nervous system'},
+  {icon:'❤️',label:'Heart',         query:'human heart chambers valves blood flow'},
+  {icon:'🌱',label:'Plant Cell',    query:'plant cell organelles labeled'},
+  {icon:'⚡',label:'Circuit',       query:'electric circuit series parallel resistors'},
+  {icon:'💧',label:'Water Cycle',   query:'water cycle evaporation condensation precipitation'},
+  {icon:'📐',label:'Triangle/BPT',  query:'triangle BPT Thales theorem similarity'},
+  {icon:'🗺️',label:'India Map',     query:'India physical map rivers mountains plateaus'},
+  {icon:'🌿',label:'Photosynthesis',query:'photosynthesis process chloroplast light reaction'},
+  {icon:'⚗️',label:'Atom Model',    query:'Bohr atomic model electron shells orbits'},
+  {icon:'🧬',label:'DNA',           query:'DNA double helix structure bases'},
+  {icon:'🌊',label:'Sound Wave',    query:'sound wave longitudinal compression rarefaction'},
+];
+
+function showDiagramHome(){
+  const out=document.getElementById('diagramOutput');if(!out)return;
+  const homeBtn=document.getElementById('diagramHomeBtn');
+  if(homeBtn) homeBtn.style.display='none';
+
+  const grid=DIAGRAM_QUICK.map(d=>
+    `<button class="diagram-quick-btn" onclick="generateDiagram('${d.query}')">
+      <span class="dq-icon">${d.icon}</span>${d.label}
+    </button>`
+  ).join('');
+
+  out.innerHTML=
+    `<div class="diagram-custom-bar">
+       <input class="diagram-custom-input" id="diagramCustomInput"
+         placeholder="Draw anything or plot: e.g. y=x^2, eye structure, digestive system"
+         onkeydown="if(event.key==='Enter') drawCustomDiagram()"/>
+       <button class="diagram-custom-go" onclick="drawCustomDiagram()">🎨 Draw</button>
+     </div>
+     <div class="diagram-section-label">Quick picks</div>
+     <div class="diagram-grid">${grid}</div>`;
+
+  // Focus the input
+  setTimeout(()=>{ const el=document.getElementById('diagramCustomInput'); if(el) el.focus(); }, 50);
+}
+
+function drawCustomDiagram(){
+  const inp=document.getElementById('diagramCustomInput');
+  const q=inp?inp.value.trim():'';
+  if(!q) return;
+  generateDiagram(q);
+}
+
+function askNewDiagram(){ showDiagramHome(); }
+
+function renderSvgDiagram(svgKey, query){
+  const out=document.getElementById('diagramOutput');if(!out)return;
+  const homeBtn=document.getElementById('diagramHomeBtn');
+  if(homeBtn) homeBtn.style.display='inline-flex';
+  out.innerHTML=
+    '<div class="diagram-result">'
+    +'<div class="diagram-result-title">📐 '+escHtml(query)+'</div>'
+    +'<div style="background:#fff;border-radius:12px;padding:8px;border:1px solid var(--border);overflow:auto">'
+    +SVG_DIAGRAMS[svgKey]
+    +'</div>'
+    +'<div class="diagram-actions">'
+      +'<button class="d-action-btn" onclick="showDiagramHome()">🏠 Home</button>'
+      +'<button class="d-action-btn" onclick="window.print()">🖨️ Print</button>'
+    +'</div>'
+    +'</div>';
+}
+
 async function generateDiagram(query){
   const out=document.getElementById('diagramOutput');if(!out)return;
-  out.innerHTML='<div class="canvas-loading"><div style="font-size:28px">🎨</div><div style="font-size:13px;font-weight:600">Drawing '+escHtml(query)+'...</div><div style="display:flex;gap:5px"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>';
-  const prompt='Draw a detailed labeled diagram of "'+query+'" for Karnataka Class 10 SSLC. Use ASCII art and Unicode box-drawing characters. Label ALL parts with arrows. Put diagram in a code block. Then list parts with descriptions.';
+
+  // ── Graph / plot request ──
+  if(isGraphRequest(query)){
+    const equations=parseEquations(query);
+    if(equations.length>0){ renderGraph(query,equations); return; }
+  }
+
+  // Check built-in SVG first
+  const svgKey=getSvgKey(query);
+  if(svgKey){ renderSvgDiagram(svgKey, query); return; }
+
+  // Show home button
+  const homeBtn=document.getElementById('diagramHomeBtn');
+  if(homeBtn) homeBtn.style.display='inline-flex';
+
+  // Loading state
+  out.innerHTML='<div class="canvas-loading"><div style="font-size:28px">🎨</div><div style="font-size:13px;font-weight:600;color:var(--ink)">Drawing '+escHtml(query)+'…</div><div style="display:flex;gap:5px"><div class="td"></div><div class="td"></div><div class="td"></div></div><div style="font-size:11px;color:var(--muted);margin-top:4px">AI is sketching your diagram</div></div>';
+
+  const prompt=`Create a clear, well-labeled educational SVG diagram of: "${query}"
+
+Requirements:
+- Output ONLY the raw SVG. Start with <svg and end with </svg>. No markdown, no code fences, no explanation.
+- viewBox="0 0 520 420" xmlns="http://www.w3.org/2000/svg"
+- font-family="Arial,sans-serif"
+- Title at top (font-size="15" font-weight="bold")
+- All important parts labeled with text and leader lines/arrows
+- Use filled colored shapes (not just outlines) — make it visually clear
+- Add a small legend/key box at the bottom if helpful
+- Suitable for a Class 10 Indian school student
+- Make it accurate and complete for the topic`;
+
   try{
-    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+GEM_KEY,
-      {method:'POST',headers:{'Content-Type':'application/json'},
+    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      {method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEM_KEY},
        body:JSON.stringify({
-         system_instruction:{parts:[{text:'You draw clear ASCII/Unicode educational diagrams for Indian students.'}]},
+         system_instruction:{parts:[{text:'You are an expert educational diagram creator. Output ONLY raw SVG code — no markdown, no backticks, no explanation, no preamble. Start your response with <svg and end with </svg>.'}]},
          contents:[{role:'user',parts:[{text:prompt}]}],
-         generationConfig:{temperature:0.3,maxOutputTokens:1500}
+         generationConfig:{temperature:0.1,maxOutputTokens:4000}
        })});
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e?.error?.message||'HTTP '+resp.status);}
     const data=await resp.json();
-    const diagram=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    if(!diagram) throw new Error('No response');
-    out.innerHTML='<div class="diagram-result">'
+    let raw=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    // Strip any markdown fences if model added them
+    raw=raw.replace(/^```[\w]*\n?/gm,'').replace(/```$/gm,'').trim();
+    if(!raw.startsWith('<svg')) throw new Error('Invalid SVG response — try a different topic');
+    out.innerHTML=
+      '<div class="diagram-result">'
       +'<div class="diagram-result-title">📐 '+escHtml(query)+'</div>'
-      +'<div class="diagram-text">'+formatMsg(diagram,'bot')+'</div>'
+      +'<div style="background:#fff;border-radius:12px;padding:8px;border:1px solid var(--border);overflow:auto">'
+      +raw
+      +'</div>'
       +'<div class="diagram-actions">'
-        +'<button class="d-action-btn" onclick="navigator.clipboard.writeText(document.getElementById(\'diagramOutput\').innerText)">📋 Copy</button>'
-        +'<button class="d-action-btn" onclick="askNewDiagram()">🎨 New</button>'
+        +'<button class="d-action-btn" onclick="showDiagramHome()">🏠 Home</button>'
+        +'<button class="d-action-btn" onclick="generateDiagram('+JSON.stringify(query)+')">🔄 Redraw</button>'
+        +'<button class="d-action-btn" onclick="window.print()">🖨️ Print</button>'
       +'</div>'
       +'</div>';
   }catch(e){
     out.innerHTML='<div class="diagram-result">'
-      +'<div style="color:var(--red);font-size:13px;margin-bottom:10px">❌ '+escHtml(e.message||'Error')+'</div>'
+      +'<div style="color:var(--red);font-size:13px;margin-bottom:12px">❌ '+escHtml(e.message||'Could not generate diagram')+'</div>'
+      +'<div style="display:flex;gap:8px">'
       +'<button class="d-action-btn" onclick="generateDiagram('+JSON.stringify(query)+')">🔄 Try Again</button>'
+      +'<button class="d-action-btn" onclick="showDiagramHome()">🏠 Home</button>'
+      +'</div>'
       +'</div>';
   }
 }
@@ -2226,46 +3139,149 @@ function resetDailyCount(){
   }catch(e){}
   updateRequestBadge();
 }
-// One-time reset — remove this after first deploy
-(function(){
-  try{
-    Object.keys(localStorage).filter(k=>k.startsWith('vidya_req_')||k.startsWith('vidya_usage_'))
-      .forEach(k=>localStorage.removeItem(k));
-  }catch(e){}
-})();
-
-
 // ── CORE RENDERING FUNCTIONS ─────────────────────────────────
 
 
-function formatMsg(txt,role){
+// ── MATH RENDERING ───────────────────────────────────────────────────
+// Converts plain-text math patterns AI might write into proper LaTeX,
+// then renders via KaTeX. Graceful fallback if KaTeX isn't loaded yet.
+
+function renderLatex(latex, displayMode){
+  try{
+    if(typeof katex !== 'undefined'){
+      return katex.renderToString(latex, {
+        displayMode: displayMode,
+        throwOnError: false,
+        strict: false,
+        trust: false
+      });
+    }
+  }catch(e){}
+  // KaTeX not loaded yet — return plain text wrapped nicely
+  return displayMode
+    ? '<span class="math-block" style="font-family:var(--mono)">'+escHtml(latex)+'</span>'
+    : '<code>'+escHtml(latex)+'</code>';
+}
+
+// Convert AI's plain-text maths into proper LaTeX notation
+function normaliseToLatex(expr){
+  let s = expr;
+  // Already-LaTeX-looking content — pass through
+  // Common plain-text → LaTeX rewrites
+  s = s.replace(/\bsqrt\s*\(([^)]+)\)/g, '\\sqrt{$1}');          // sqrt(x) → \sqrt{x}
+  s = s.replace(/\bsqrt\s+(\S+)/g, '\\sqrt{$1}');                // sqrt x  → \sqrt{x}
+  s = s.replace(/\^(\d+)/g, '^{$1}');                            // x^2 → x^{2}
+  s = s.replace(/\^(\([^)]+\))/g, '^{$1}');                      // x^(n+1) → x^{n+1}
+  s = s.replace(/\bfrac\(([^,]+),([^)]+)\)/g, '\\frac{$1}{$2}');// frac(a,b)
+  s = s.replace(/\bpi\b/g, '\\pi');                              // pi → \pi
+  s = s.replace(/\btheta\b/gi, '\\theta');
+  s = s.replace(/\balpha\b/gi, '\\alpha');
+  s = s.replace(/\bbeta\b/gi, '\\beta');
+  s = s.replace(/\bgamma\b/gi, '\\gamma');
+  s = s.replace(/\bdelta\b/gi, '\\delta');
+  s = s.replace(/\binfty\b/gi, '\\infty');
+  s = s.replace(/\bsigma\b/gi, '\\sigma');
+  s = s.replace(/\+-/g, '\\pm');
+  s = s.replace(/!=/g, '\\neq');
+  s = s.replace(/<=/g, '\\leq');
+  s = s.replace(/>=/g, '\\geq');
+  s = s.replace(/\btimes\b/g, '\\times');
+  s = s.replace(/\bdiv\b/g, '\\div');
+  s = s.replace(/->|→/g, '\\rightarrow');
+  return s;
+}
+
+// Process a message: find math delimiters & plain-text math and render them
+function processMath(html){
+  // Step 1: protect code blocks from math processing
+  const codeBlocks = [];
+  html = html.replace(/<pre[\s\S]*?<\/pre>/g, m => { codeBlocks.push(m); return `\x00CODE${codeBlocks.length-1}\x00`; });
+  html = html.replace(/<code[\s\S]*?<\/code>/g, m => { codeBlocks.push(m); return `\x00CODE${codeBlocks.length-1}\x00`; });
+
+  // Step 2: render $$ ... $$ as display math
+  html = html.replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
+    const latex = normaliseToLatex(expr.trim());
+    return '<div class="math-block">'+renderLatex(latex, true)+'</div>';
+  });
+
+  // Step 3: render \[ ... \] as display math
+  html = html.replace(/\\\[([\s\S]+?)\\\]/g, (_, expr) => {
+    const latex = normaliseToLatex(expr.trim());
+    return '<div class="math-block">'+renderLatex(latex, true)+'</div>';
+  });
+
+  // Step 4: render $ ... $ and \( ... \) as inline math
+  html = html.replace(/\\\((.+?)\\\)/g, (_, expr) => {
+    return '<span class="math-inline">'+renderLatex(normaliseToLatex(expr.trim()), false)+'</span>';
+  });
+  html = html.replace(/(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)/g, (_, expr) => {
+    return '<span class="math-inline">'+renderLatex(normaliseToLatex(expr.trim()), false)+'</span>';
+  });
+
+  // Step 5: catch common plain-text patterns the AI writes without delimiters
+  // e.g.  "x^2 + y^2 = z^2"  "sqrt(b^2 - 4ac)"  "1/2 mv^2"  "a_n = a + (n-1)d"
+  html = html.replace(/(?<![<\/\w])([a-zA-Zα-ωΑ-Ω\d\s\+\-\*\/\^\(\)_\.=,]*(?:\^[\{\d\(\)]|\bsqrt\b|\\frac|_\{)[a-zA-Z\d\s\+\-\*\/\^\(\)_\.\{\}=,\\]*)/g, (match) => {
+    const trimmed = match.trim();
+    if(trimmed.length < 3) return match;
+    // Avoid double-wrapping already-rendered math
+    if(trimmed.startsWith('\\(') || trimmed.startsWith('$$')) return match;
+    const latex = normaliseToLatex(trimmed);
+    // Only replace if normalisation actually changed something (i.e. it IS math)
+    if(latex === trimmed) return match;
+    return '<span class="math-inline">'+renderLatex(latex, false)+'</span>';
+  });
+
+  // Step 6: restore code blocks
+  html = html.replace(/\x00CODE(\d+)\x00/g, (_, i) => codeBlocks[+i]);
+  return html;
+}
+
+function formatMsg(txt, role){
   if(role==='user') return escHtml(txt);
-  let h=String(txt);
-  // Escape HTML first
-  h=h.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  // Code blocks
-  h=h.replace(/```([\s\S]*?)```/g,function(_,c){return '<pre>'+c.trim()+'</pre>';});
-  // Inline code - use split approach to avoid backtick regex issues
-  h=h.replace(/`([^`\n]+)`/g,'<code>$1</code>');
-  // Bold (**text**)
-  h=h.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
-  // Italic (*text*)
-  h=h.replace(/\*([^*\n]+)\*/g,'<em>$1</em>');
-  // Headers
-  h=h.replace(/^#{3} (.+)$/gm,'<div style="font-size:13px;font-weight:800;color:var(--saffron);margin:10px 0 4px;text-transform:uppercase">$1</div>');
-  h=h.replace(/^#{2} (.+)$/gm,'<div style="font-size:15px;font-weight:900;color:var(--ink);margin:12px 0 5px">$1</div>');
-  h=h.replace(/^#{1} (.+)$/gm,'<div style="font-size:16px;font-weight:900;color:var(--ink);margin:12px 0 6px">$1</div>');
-  // HR
-  h=h.replace(/^-{3,}$/gm,'<hr style="border:none;border-top:1px solid var(--border);margin:10px 0">');
-  // Bullets
-  h=h.replace(/^[\-\u2022] (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0"><span style="color:var(--saffron);flex-shrink:0">\u2022</span><span>$1</span></div>');
-  // Numbered list
-  h=h.replace(/^(\d+)\. (.+)$/gm,'<div style="display:flex;gap:7px;margin:3px 0"><span style="background:var(--saffron-l);color:var(--saffron);font-weight:800;min-width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">$1</span><span>$2</span></div>');
-  // Checkmarks
-  h=h.replace(/^\u2705 (.+)$/gm,'<div style="color:var(--green);display:flex;gap:6px">\u2705 <span>$1</span></div>');
-  h=h.replace(/^\u274c (.+)$/gm,'<div style="color:var(--red);display:flex;gap:6px">\u274c <span>$1</span></div>');
-  // Newlines to <br>
-  h=h.replace(/\n/g,'<br>');
+  let h = String(txt);
+
+  // 1. Protect existing LaTeX delimiters before HTML escaping — pull them out
+  const mathStash = [];
+  h = h.replace(/\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\(.+?\\\)|\$[^$\n]+?\$/g, m => {
+    mathStash.push(m); return `\x01MATH${mathStash.length-1}\x01`;
+  });
+
+  // 2. Escape HTML
+  h = h.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  // 3. Restore stashed math delimiters (unescaped)
+  h = h.replace(/\x01MATH(\d+)\x01/g, (_, i) => mathStash[+i]);
+
+  // 4. Code blocks (must come before other formatting)
+  h = h.replace(/```([\s\S]*?)```/g, (_, c) => '<pre>'+c.trim()+'</pre>');
+  h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+  // 5. Bold / Italic
+  h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+
+  // 6. Headers
+  h = h.replace(/^#{3} (.+)$/gm, '<div style="font-size:13px;font-weight:800;color:var(--saffron);margin:10px 0 4px;text-transform:uppercase">$1</div>');
+  h = h.replace(/^#{2} (.+)$/gm, '<div style="font-size:15px;font-weight:900;color:var(--ink);margin:12px 0 5px">$1</div>');
+  h = h.replace(/^#{1} (.+)$/gm, '<div style="font-size:16px;font-weight:900;color:var(--ink);margin:12px 0 6px">$1</div>');
+
+  // 7. HR
+  h = h.replace(/^-{3,}$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:10px 0">');
+
+  // 8. Bullets & numbered lists
+  h = h.replace(/^[\-•] (.+)$/gm, '<div style="display:flex;gap:7px;margin:3px 0"><span style="color:var(--saffron);flex-shrink:0">•</span><span>$1</span></div>');
+  h = h.replace(/^(\d+)\. (.+)$/gm, '<div style="display:flex;gap:7px;margin:3px 0"><span style="background:var(--saffron-l);color:var(--saffron);font-weight:800;min-width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">$1</span><span>$2</span></div>');
+
+  // 9. Checkmarks / crosses
+  h = h.replace(/^✅ (.+)$/gm, '<div style="color:var(--green);display:flex;gap:6px">✅ <span>$1</span></div>');
+  h = h.replace(/^❌ (.+)$/gm, '<div style="color:var(--red);display:flex;gap:6px">❌ <span>$1</span></div>');
+
+  // 10. Newlines → <br>
+  h = h.replace(/\n/g, '<br>');
+
+  // 11. Render all math (LaTeX delimiters + plain-text patterns)
+  h = processMath(h);
+
   return h;
 }
 
@@ -2378,8 +3394,8 @@ function submitQuizAnswer(cardId, answerText){
   const qtext=card.querySelector('.quiz-qtext').innerText;
   const evalPrompt='My answer to "'+qtext+'" is: '+answer;
   const tid=showTyping();loading=true;
-  fetch('https://generativelanguage.googleapis.com/v1beta/models/'+CURRENT_MODEL+':generateContent?key='+GEM_KEY,
-    {method:'POST',headers:{'Content-Type':'application/json'},
+  fetch('https://generativelanguage.googleapis.com/v1beta/models/'+CURRENT_MODEL+':generateContent',
+    {method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEM_KEY},
      body:JSON.stringify({system_instruction:{parts:[{text:sysPrompt()}]},contents:[...history,{role:'user',parts:[{text:evalPrompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:600}})
     }).then(r=>r.json()).then(d=>{
       hideTyping(tid);loading=false;
@@ -2450,7 +3466,8 @@ function initVoice(){
 
   recognition.onstart = () => {
     isListening = true;
-    btn.classList.add('listening');
+    const micBtn = document.getElementById('micBtn');
+    if(micBtn) micBtn.classList.add('listening');
     setVoiceStatus('🔴 Listening… speak now');
   };
 
@@ -2500,7 +3517,8 @@ function toggleVoiceInput(){
 
 function resetMicBtn(){
   isListening = false;
-  if(btn) btn.classList.remove('listening');
+  const micBtn = document.getElementById('micBtn');
+  if(micBtn) micBtn.classList.remove('listening');
 }
 
 function setVoiceStatus(msg){
@@ -2674,6 +3692,8 @@ function initApp(){
   buildWelcome();
   // Ref tab
   renderRef();
+  // Diagram home
+  showDiagramHome();
   GEM_KEY=getCurrentKey();
 }
 </script>

@@ -438,6 +438,12 @@ body{
 .ref-scroll::-webkit-scrollbar{width:4px}
 .ref-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 .ref-inner{max-width:700px;margin:0 auto}
+.ref-section{margin-bottom:18px}
+.ref-section-title{
+  font-size:11px;font-weight:800;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em;
+  margin-bottom:8px;padding:0 2px;
+}
 .ref-hint{background:var(--saffron-l);border:1px solid #fed7aa;border-radius:var(--r12);
   padding:11px 14px;margin-bottom:14px;font-size:12.5px;color:#92400e;line-height:1.5}
 .ref-filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
@@ -448,21 +454,35 @@ body{
 .ref-select:focus{border-color:var(--saffron)}
 .ref-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r12);
   overflow:hidden;margin-bottom:8px;box-shadow:var(--sh-sm)}
-.ref-card-head{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;
-  gap:10px;cursor:pointer;user-select:none;transition:background var(--t)}
+.ref-card-head{padding:12px 15px;display:flex;align-items:flex-start;justify-content:space-between;
+  gap:8px;cursor:pointer;user-select:none;transition:background var(--t)}
 .ref-card-head:hover{background:var(--bg2)}
-.ref-card-title{font-size:13px;font-weight:700;color:var(--ink)}
-.ref-meta{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:var(--r999)}
+.ref-card-title{font-size:13px;font-weight:700;color:var(--ink);flex:1;min-width:0}
+/* both .ref-meta (desktop) and .ref-card-meta (mobile) */
+.ref-meta,.ref-card-meta{display:flex;align-items:center;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:50%}
+.pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:var(--r999);white-space:nowrap}
 .pill-red{background:var(--red-l);color:var(--red);border:1px solid #fecaca}
 .pill-orange{background:var(--saffron-l);color:var(--saffron-d);border:1px solid #fed7aa}
 .pill-green{background:var(--green-l);color:var(--green);border:1px solid #bbf7d0}
 .pill-violet{background:var(--violet-l);color:var(--violet);border:1px solid #ddd6fe}
-.chev{font-size:11px;color:var(--muted2);transition:transform .2s}
-.chev.open{transform:rotate(180deg)}
+.chev,.chevron{font-size:11px;color:var(--muted2);transition:transform .2s;flex-shrink:0}
+.chev.open,.chevron.open{transform:rotate(180deg)}
 .ref-card-body{display:none;padding:13px 15px;background:var(--bg2);border-top:1px solid var(--border)}
 .ref-card-body.open{display:block}
-.ref-body-text{font-size:12.5px;color:var(--ink2);line-height:1.85;white-space:pre-wrap;font-family:var(--mono)}
+.ref-body-text{
+  font-size:12.5px;color:var(--ink2);line-height:1.85;
+  white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;
+  font-family:var(--mono);overflow-x:auto;
+}
+/* On mobile, switch to normal font so long formulas scroll rather than wrap badly */
+@media(max-width:600px){
+  .ref-body-text{font-size:12px;line-height:1.75;font-family:var(--font)}
+  .ref-card-head{padding:10px 12px}
+  .ref-card-body{padding:10px 12px}
+  .ref-card-title{font-size:12.5px}
+  .ref-meta,.ref-card-meta{max-width:55%;gap:3px}
+  .pill{font-size:9px;padding:2px 5px}
+}
 
 /* Quiz cards */
 .quiz-card{background:var(--surface);border:1.5px solid #fed7aa;border-radius:var(--r12);
@@ -609,6 +629,180 @@ body{
 }
 @media(max-width:500px){
   .user-name{display:none}
+}
+
+/* ════════════════════════════════════════════════
+   MOBILE UI  (≤ 600px)  — full-screen page-based
+════════════════════════════════════════════════ */
+@media(max-width:600px){
+
+  /* Hide entire desktop app shell */
+  #app { display:none !important; }
+
+  /* Mobile shell is visible */
+  #mobileApp { display:flex !important; }
+}
+
+/* Mobile shell — hidden on desktop */
+#mobileApp {
+  display:none;
+  flex-direction:column;
+  height:100%;
+  width:100%;
+  overflow:hidden;
+  position:fixed;
+  inset:0;
+  background:var(--bg);
+}
+
+/* ── Mobile top bar ── */
+.m-topbar {
+  height:52px;flex-shrink:0;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 14px;gap:10px;
+  box-shadow:var(--sh-sm);
+  z-index:10;position:relative;
+}
+.m-tb-back {
+  width:34px;height:34px;border-radius:var(--r8);
+  border:1.5px solid var(--border);background:var(--bg2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:17px;flex-shrink:0;
+  transition:all var(--t);
+}
+.m-tb-back:hover{border-color:var(--saffron);background:var(--saffron-l)}
+.m-tb-title {
+  flex:1;font-size:16px;font-weight:800;color:var(--ink);
+  letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.m-tb-title span{color:var(--saffron)}
+.m-tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.m-theme-btn {
+  width:34px;height:34px;border-radius:var(--r8);
+  border:1.5px solid var(--border);background:var(--bg2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:17px;transition:all var(--t);
+}
+.m-theme-btn:hover{border-color:var(--saffron);background:var(--saffron-l)}
+.m-user-av {
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--saffron),var(--gold));
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:#fff;flex-shrink:0;
+}
+
+/* ── Mobile screens ── */
+.m-screen {
+  flex:1;overflow:hidden;display:none;flex-direction:column;
+}
+.m-screen.active { display:flex; }
+
+/* ── Home screen ── */
+.m-home {
+  overflow-y:auto;padding:16px;
+}
+.m-welcome-card {
+  background:linear-gradient(135deg,var(--saffron),var(--gold));
+  border-radius:var(--r16);padding:18px 20px;margin-bottom:20px;
+  color:#fff;
+}
+.m-welcome-greeting {
+  font-size:18px;font-weight:800;margin-bottom:4px;letter-spacing:-.03em;
+}
+.m-welcome-sub {
+  font-size:12px;opacity:.85;line-height:1.5;
+}
+.m-req-pill {
+  display:inline-block;margin-top:10px;
+  background:rgba(255,255,255,.25);border-radius:var(--r999);
+  padding:3px 10px;font-size:11px;font-weight:700;
+}
+
+.m-section-label {
+  font-size:11px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em;
+  margin-bottom:10px;
+}
+
+/* 2×3 subject grid */
+.m-subject-grid {
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;
+}
+.m-subject-card {
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--r16);padding:18px 12px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;transition:all .2s ease;
+  box-shadow:var(--sh-sm);
+}
+.m-subject-card:active{transform:scale(.96);}
+.m-subject-card:hover{border-color:var(--saffron);background:var(--saffron-l)}
+.m-subject-card.active{
+  border-color:var(--saffron);background:var(--saffron-l);
+  box-shadow:0 4px 16px var(--saffron-glow);
+}
+.m-subj-icon{font-size:30px;line-height:1}
+.m-subj-name{font-size:12.5px;font-weight:700;color:var(--ink2);text-align:center}
+.m-subj-marks{font-size:10px;color:var(--muted);font-weight:600;text-align:center}
+
+/* Diagram card */
+.m-diagram-card {
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--r16);padding:16px 20px;
+  display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:all .2s ease;box-shadow:var(--sh-sm);
+  margin-bottom:20px;
+}
+.m-diagram-card:active{transform:scale(.98)}
+.m-diagram-card:hover{border-color:var(--violet);background:var(--violet-l)}
+.m-diagram-card.ref-card-hover:hover{border-color:var(--gold);background:var(--gold-l)}
+.m-diagram-icon{font-size:32px;flex-shrink:0}
+.m-diagram-info{flex:1}
+.m-diagram-title{font-size:14px;font-weight:700;color:var(--ink)}
+.m-diagram-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.m-diagram-arrow{font-size:18px;color:var(--muted)}
+
+/* ── Mobile chat screen ── */
+.m-chat-scroll {
+  flex:1;overflow-y:auto;padding:16px;
+  scroll-behavior:smooth;
+}
+.m-chat-scroll::-webkit-scrollbar{width:3px}
+.m-chat-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.m-msgs-inner{display:flex;flex-direction:column;gap:0}
+
+/* ── Mobile input area ── */
+.m-input-area {
+  flex-shrink:0;padding:10px 12px 14px;
+  background:var(--bg);border-top:1px solid var(--border);
+}
+.m-input-box {
+  background:var(--surface);border:1.5px solid var(--border2);
+  border-radius:var(--r16);overflow:hidden;
+  box-shadow:var(--sh-sm);transition:border-color var(--t),box-shadow var(--t);
+}
+.m-input-box:focus-within{
+  border-color:var(--saffron);
+  box-shadow:0 0 0 3px var(--saffron-glow);
+}
+.m-chat-input {
+  width:100%;border:none;outline:none;resize:none;
+  padding:12px 14px 4px;font-size:15px;font-family:var(--font);
+  color:var(--ink);background:transparent;
+  max-height:120px;line-height:1.5;min-height:44px;
+}
+.m-chat-input::placeholder{color:var(--muted2)}
+.m-input-toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:4px 8px 8px;
+}
+
+/* ── Mobile diagram screen ── */
+.m-diagram-output {
+  flex:1;overflow-y:auto;
+}
 }
 
 /* Image grid */
@@ -846,6 +1040,168 @@ body{
 
   </div><!-- /body-wrap -->
 </div><!-- /app -->
+
+<!-- ══════════════════════════════════════════
+     MOBILE APP  (≤600px)
+══════════════════════════════════════════ -->
+<div id="mobileApp">
+
+  <!-- Mobile top bar -->
+  <div class="m-topbar">
+    <div class="m-tb-back" id="mBackBtn" onclick="mobileGoBack()" style="display:none">←</div>
+    <div class="m-tb-title" id="mTitle">Vi<span>dya</span></div>
+    <div class="m-tb-right">
+      <div class="m-theme-btn" onclick="toggleTheme()" id="mThemeBtn">🌙</div>
+      <div class="m-user-av" id="mUserAv">?</div>
+    </div>
+  </div>
+
+  <!-- SCREEN 1: Home — subject grid -->
+  <div class="m-screen active" id="mScreenHome">
+    <div class="m-home">
+
+      <!-- Welcome card -->
+      <div class="m-welcome-card">
+        <div class="m-welcome-greeting">Hey <span id="mStudentName">there</span>! 👋</div>
+        <div class="m-welcome-sub">Karnataka SSLC 2025-26 · What do you want to study today?</div>
+        <div class="m-req-pill" id="mReqPill">20 questions left today</div>
+      </div>
+
+      <!-- Subject grid 2×3 -->
+      <div class="m-section-label">Choose a Subject</div>
+      <div class="m-subject-grid">
+        <div class="m-subject-card" onclick="mobileOpenSubject('Mathematics')">
+          <span class="m-subj-icon">🔢</span>
+          <span class="m-subj-name">Mathematics</span>
+          <span class="m-subj-marks">9m — Triangles ⭐</span>
+        </div>
+        <div class="m-subject-card" onclick="mobileOpenSubject('Science')">
+          <span class="m-subj-icon">🔬</span>
+          <span class="m-subj-name">Science</span>
+          <span class="m-subj-marks">8m — Electricity ⭐</span>
+        </div>
+        <div class="m-subject-card" onclick="mobileOpenSubject('Social Science')">
+          <span class="m-subj-icon">🌍</span>
+          <span class="m-subj-name">Social Science</span>
+          <span class="m-subj-marks">25m — History ⭐</span>
+        </div>
+        <div class="m-subject-card" onclick="mobileOpenSubject('English')">
+          <span class="m-subj-icon">📖</span>
+          <span class="m-subj-name">English</span>
+          <span class="m-subj-marks">Prose + Poetry 60m</span>
+        </div>
+        <div class="m-subject-card" onclick="mobileOpenSubject('Hindi')">
+          <span class="m-subj-icon">🇮🇳</span>
+          <span class="m-subj-name">Hindi</span>
+          <span class="m-subj-marks">व्याकरण 8m ⭐</span>
+        </div>
+        <div class="m-subject-card" onclick="mobileOpenSubject('Kannada')">
+          <span class="m-subj-icon">🌿</span>
+          <span class="m-subj-name">Kannada</span>
+          <span class="m-subj-marks">ಕವನ + ಗದ್ಯ 53m</span>
+        </div>
+      </div>
+
+      <!-- Tools -->
+      <div class="m-section-label">Tools</div>
+      <div class="m-diagram-card" onclick="mobileOpenDiagram()">
+        <span class="m-diagram-icon">🎨</span>
+        <div class="m-diagram-info">
+          <div class="m-diagram-title">Diagram Board</div>
+          <div class="m-diagram-sub">Draw diagrams · Plot graphs · Quick picks</div>
+        </div>
+        <span class="m-diagram-arrow">›</span>
+      </div>
+      <div class="m-diagram-card ref-card-hover" onclick="mobileOpenRef()" style="border-color:var(--border)">
+        <span class="m-diagram-icon">📐</span>
+        <div class="m-diagram-info">
+          <div class="m-diagram-title">Blueprints &amp; Notes</div>
+          <div class="m-diagram-sub">Formulas · Chapters · Key Dates · Exam Tips</div>
+        </div>
+        <span class="m-diagram-arrow">›</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCREEN 2: Chat -->
+  <div class="m-screen" id="mScreenChat">
+    <div class="m-chat-scroll" id="mChatMessages">
+      <div class="m-msgs-inner" id="mMsgsInner"></div>
+    </div>
+    <div id="mVoiceStatus"></div>
+    <div class="m-input-area">
+      <div class="m-input-box">
+        <div class="file-strip" id="mUploadPreview">
+          <span style="font-size:16px">📎</span>
+          <span class="file-strip-name" id="mUploadName"></span>
+          <button class="file-strip-rm" onclick="mClearUpload()">✕</button>
+        </div>
+        <textarea class="m-chat-input" id="mChatInput" rows="1"
+          placeholder="Ask Vidya anything…"
+          oninput="mResizeTA(this);mUpdateSend()"
+          onkeydown="mOnKey(event)"></textarea>
+        <div class="m-input-toolbar">
+          <div class="tool-group">
+            <button class="tool-btn" onclick="document.getElementById('mFileInput').click()" title="Attach">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <input type="file" id="mFileInput" accept="image/*,.pdf" style="display:none" onchange="mHandleUpload(event)"/>
+            <button class="tool-btn active" id="mWebSearchBtn" onclick="toggleWebSearch()" title="Web search">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+          </div>
+          <div class="tool-group">
+            <span id="mVoiceStatusInline" class="voice-status-badge"></span>
+            <button class="tool-btn" id="mMicBtn" onclick="toggleVoiceInput()" title="Voice input">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+            <button class="send-btn off" id="mSendBtn" onclick="mSendMsg()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="input-footer">
+        <div class="input-note">⚡ Gemini Flash · <b id="mReqCount"></b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: Diagram -->
+  <div class="m-screen" id="mScreenDiagram">
+    <div class="m-diagram-output" id="mDiagramOutput">
+      <!-- populated by mShowDiagramHome() -->
+    </div>
+  </div>
+
+  <!-- SCREEN 4: Blueprints & Notes -->
+  <div class="m-screen" id="mScreenRef">
+    <div style="flex-shrink:0;padding:12px 14px 8px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:8px">
+      <select class="ref-select" id="mRefSubj" onchange="mRenderRef()" style="flex:1">
+        <option value="">All Subjects</option>
+        <option value="Mathematics">🔢 Mathematics</option>
+        <option value="Science">🔬 Science</option>
+        <option value="Social Science">🌍 Social Science</option>
+        <option value="English">📖 English FL</option>
+        <option value="Hindi">🇮🇳 Hindi</option>
+        <option value="Kannada">🌿 Kannada</option>
+      </select>
+      <select class="ref-select" id="mRefCat" onchange="mRenderRef()" style="flex:1">
+        <option value="">All Categories</option>
+        <option value="formula">📐 Formulas</option>
+        <option value="chapter">📚 Chapters</option>
+        <option value="dates">📅 Key Dates</option>
+        <option value="tips">💡 Exam Tips</option>
+        <option value="blueprint">📊 Blueprint</option>
+      </select>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px 14px">
+      <div id="mRefCards"></div>
+    </div>
+  </div>
+
+</div><!-- /mobileApp -->
 
 <!-- Progress panel -->
 <div id="progressPanel"></div>
@@ -3696,6 +4052,420 @@ function initApp(){
   showDiagramHome();
   GEM_KEY=getCurrentKey();
 }
+
+// ══════════════════════════════════════════
+//  MOBILE UI — routing + chat + diagram
+// ══════════════════════════════════════════
+
+const IS_MOBILE = () => window.innerWidth <= 600;
+
+// ── Mobile state ──────────────────────────
+let mHistory = [];          // separate chat history for mobile
+let mLoading = false;
+let mUploadedFile = null, mUploadedDataUrl = null, mUploadedMimeType = null;
+let mCurrentSubject = 'Mathematics';
+let mCurrentScreen = 'home'; // 'home' | 'chat' | 'diagram'
+
+// ── Screen routing ──────────────────────────
+function mobileShowScreen(name){
+  mCurrentScreen = name;
+  document.querySelectorAll('.m-screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('mScreenHome').classList.toggle('active', name==='home');
+  document.getElementById('mScreenChat').classList.toggle('active', name==='chat');
+  document.getElementById('mScreenDiagram').classList.toggle('active', name==='diagram');
+  document.getElementById('mScreenRef').classList.toggle('active', name==='ref');
+  const backBtn = document.getElementById('mBackBtn');
+  backBtn.style.display = name === 'home' ? 'none' : 'flex';
+}
+
+function mobileGoBack(){
+  mobileShowScreen('home');
+  document.getElementById('mTitle').innerHTML = 'Vi<span style="color:var(--saffron)">dya</span>';
+}
+
+function mobileOpenRef(){
+  document.getElementById('mTitle').textContent = '📐 Blueprints & Notes';
+  mobileShowScreen('ref');
+  mRenderRef();
+}
+
+function mRenderRef(){
+  const subj = (document.getElementById('mRefSubj')||{}).value || '';
+  const cat  = (document.getElementById('mRefCat')||{}).value  || '';
+  const container = document.getElementById('mRefCards');
+  if(!container) return;
+
+  // Reuse the desktop REF data + helper objects
+  let items = REF.filter(r =>
+    (!subj || r.s === subj) &&
+    (!cat  || r.c === cat)
+  );
+
+  if(!items.length){
+    container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">No items found.<br>Try a different filter.</div>';
+    return;
+  }
+
+  // Group by subject
+  const bySubj = {};
+  items.forEach(r => { if(!bySubj[r.s]) bySubj[r.s]=[]; bySubj[r.s].push(r); });
+
+  let html = '';
+  Object.entries(bySubj).forEach(([subj, arr]) => {
+    html += `<div class="ref-section"><div class="ref-section-title">${SUBJ_ICON[subj]||'📚'} ${subj}</div>`;
+    arr.forEach((r, i) => {
+      const id = `mrc_${subj.replace(/\s/g,'_')}_${i}`;
+      const pillClass = MARKS_COLOR[r.marks] || 'pill-green';
+      const marksPill = r.marks ? `<span class="pill ${pillClass}">${r.marks}</span>` : '';
+      const catPill   = `<span class="pill pill-orange">${CAT_ICON[r.c]} ${r.c}</span>`;
+      const bodyHtml  = formatRefBody(r.body);
+      html += `<div class="ref-card">
+        <div class="ref-card-head" onclick="toggleCard('${id}')">
+          <div class="ref-card-title">${r.title}</div>
+          <div class="ref-card-meta">${marksPill}${catPill}<span class="chevron" id="ch_${id}">▾</span></div>
+        </div>
+        <div class="ref-card-body${r.c==='blueprint'?' open':''}" id="${id}">
+          <div class="ref-body-text">${bodyHtml}</div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function mobileOpenSubject(subject){
+  mCurrentSubject = subject;
+  SUBJECT = subject; // sync with desktop state
+  // Update topbar title
+  const icons = {Mathematics:'🔢',Science:'🔬','Social Science':'🌍',English:'📖',Hindi:'🇮🇳',Kannada:'🌿',Sanskrit:'🕉️'};
+  document.getElementById('mTitle').textContent = (icons[subject]||'📚') + ' ' + subject;
+  // Reset chat for this subject
+  mHistory = [];
+  document.getElementById('mMsgsInner').innerHTML = '';
+  // Update placeholder
+  const phs = {
+    Mathematics:"Try: 'Quiz on Triangles' or solve x²-5x+6=0",
+    Science:"Try: 'Ohm\\'s Law' or balance Fe₂O₃ + Al",
+    'Social Science':"Try: 'Causes of 1857 revolt'",
+    English:"Try: 'Figures of speech in Sarus Crane'",
+    Hindi:'हिंदी के बारे में कुछ भी पूछो…',
+    Kannada:'ಕನ್ನಡದ ಬಗ್ಗೆ ಏನಾದರೂ ಕೇಳಿ…'
+  };
+  document.getElementById('mChatInput').placeholder = phs[subject] || 'Ask Vidya anything…';
+  // Show welcome message
+  mobileShowScreen('chat');
+  mAddBubble('bot', buildMobileWelcome(subject));
+  setTimeout(()=>{ const el=document.getElementById('mChatMessages'); if(el) el.scrollTop=el.scrollHeight; },100);
+}
+
+function mobileOpenDiagram(){
+  document.getElementById('mTitle').textContent = '🎨 Diagram Board';
+  mobileShowScreen('diagram');
+  mShowDiagramHome();
+}
+
+// ── Welcome message for mobile ────────────────
+function buildMobileWelcome(subject){
+  const intros = {
+    Mathematics: `Hey ${STU_NAME}! 🔢 Let's do **Maths** today!\n\n📌 Highest mark chapter: **Triangles (9m)**\n\nWhat topic shall we start with?`,
+    Science: `Hey ${STU_NAME}! 🔬 **Science** time!\n\n📌 Top chapters: **Electricity, Light, Carbon Compounds (8m each)**\n\nWhat shall we cover?`,
+    'Social Science': `Hey ${STU_NAME}! 🌍 **Social Science** — let's ace it!\n\n📌 **History (25m)** is the highest — start there?\n\nAsk me anything!`,
+    English: `Hey ${STU_NAME}! 📖 **English** — let's go!\n\n📌 **Prose (30m) + Poetry (30m)** = 60/100\n\nWhich lesson or poem?`,
+    Hindi: `नमस्ते ${STU_NAME}! 🇮🇳 **हिंदी** शुरू करते हैं!\n\n📌 **व्याकरण (8m)** सबसे ज़्यादा अंक\n\nक्या पूछना है?`,
+    Kannada: `ಹಲೋ ${STU_NAME}! 🌿 **ಕನ್ನಡ** ಶುರು ಮಾಡೋಣ!\n\n📌 ಕವನ (27m) + ಗದ್ಯ (26m)\n\nಏನು ಕೇಳಬೇಕು?`
+  };
+  return intros[subject] || `Hey ${STU_NAME}! Ready to study **${subject}**? Ask me anything!`;
+}
+
+// ── Mobile chat ────────────────────────────────
+function mOnKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();mSendMsg();} }
+function mResizeTA(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
+function mUpdateSend(){
+  const v = document.getElementById('mChatInput').value.trim();
+  const hasFile = !!mUploadedDataUrl;
+  const btn = document.getElementById('mSendBtn');
+  if(!btn) return;
+  if(mLoading){
+    btn.className='send-btn stop';
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>';
+    btn.onclick = mStopGeneration;
+  } else {
+    btn.className = (v||hasFile) ? 'send-btn on' : 'send-btn off';
+    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>';
+    btn.onclick = mSendMsg;
+  }
+}
+
+function mStopGeneration(){ _cancelRequested=true; mLoading=false; mUpdateSend(); }
+
+function mAddBubble(role, text){
+  const inner = document.getElementById('mMsgsInner');
+  if(!inner) return;
+  const row = document.createElement('div');
+  row.className = 'msg-row ' + role;
+  if(role==='bot'){
+    row.innerHTML =
+      '<div class="bot-av">🤖</div>'+
+      '<div class="msg-content">'+
+        '<div class="msg-sender">Vidya</div>'+
+        '<div class="msg-text">'+formatMsg(text,'bot')+'</div>'+
+        '<div class="msg-actions">'+
+          '<button class="msg-action-btn" onclick="navigator.clipboard.writeText(this.closest(\'.msg-content\').querySelector(\'.msg-text\').innerText)">📋 Copy</button>'+
+          '<button class="msg-action-btn" onclick="speakText(this.closest(\'.msg-content\').querySelector(\'.msg-text\').innerText)">🔊 Speak</button>'+
+        '</div>'+
+      '</div>';
+  } else {
+    row.innerHTML='<div class="user-msg-wrap"><div class="user-bubble">'+escHtml(text)+'</div></div>';
+  }
+  inner.appendChild(row);
+  const scroll = document.getElementById('mChatMessages');
+  if(scroll) scroll.scrollTop = scroll.scrollHeight;
+  if(role==='bot' && AUTO_SPEAK && typeof speakText==='function') speakText(text);
+}
+
+let _mTc = 0;
+function mShowTyping(){
+  const id = 'mty'+(++_mTc);
+  const inner = document.getElementById('mMsgsInner');
+  if(!inner) return id;
+  const msgs = THINKING_MSGS[mCurrentSubject] || THINKING_MSGS.default;
+  const row = document.createElement('div');
+  row.id = id; row.className = 'typing-row';
+  row.innerHTML = `<div class="bot-av">🤖</div><div class="typing-bub"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div><div class="typing-msg">${msgs[Math.floor(Math.random()*msgs.length)]}</div></div>`;
+  inner.appendChild(row);
+  const scroll = document.getElementById('mChatMessages');
+  if(scroll) scroll.scrollTop = scroll.scrollHeight;
+  return id;
+}
+function mHideTyping(id){ const e=document.getElementById(id); if(e)e.remove(); }
+
+async function mSendMsg(){
+  const ta = document.getElementById('mChatInput');
+  const txt = ta.value.trim();
+  if((!txt && !mUploadedDataUrl) || mLoading) return;
+  if(!checkRateLimit()) return;
+  _lastUserMsg = txt;
+  mAddBubble('user', txt + (mUploadedDataUrl ? '\n📎 [File attached]' : ''));
+  const userParts = [];
+  if(mUploadedDataUrl){
+    userParts.push({inlineData:{mimeType:mUploadedMimeType||'image/jpeg',data:mUploadedDataUrl.split(',')[1]}});
+  }
+  if(txt) userParts.push({text: txt + (mUploadedDataUrl ? '\n\n[File uploaded — analyse for SSLC 2025-26 Karnataka Board.]' : '')});
+  else if(mUploadedDataUrl) userParts.push({text:'Analyse this file for SSLC 2025-26 Class 10 Karnataka Board.'});
+  mHistory.push({role:'user', parts:userParts});
+  mClearUpload();
+  ta.value=''; ta.style.height='auto'; mUpdateSend();
+  mLoading=true; mUpdateSend();
+  const tid = mShowTyping();
+  _cancelRequested = false;
+  try{
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent`,
+      {method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':GEM_KEY},
+       body:JSON.stringify({
+         system_instruction:{parts:[{text:sysPrompt()}]},
+         contents: mHistory,
+         generationConfig:{temperature:0.7, maxOutputTokens:1024}
+       })}
+    );
+    mHideTyping(tid);
+    if(_cancelRequested){ mLoading=false; mUpdateSend(); return; }
+    if(!resp.ok){ const eb=await resp.json().catch(()=>({})); throw new Error(eb?.error?.message||'HTTP '+resp.status); }
+    const d = await resp.json();
+    const reply = d.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't get a response. Try again!";
+    mHistory.push({role:'model', parts:[{text:reply}]});
+    mAddBubble('bot', reply);
+    incrementUserRequestCount(); updateRequestBadge(); mUpdateReqPill();
+    saveSession();
+  }catch(err){
+    mHideTyping(tid);
+    if(_cancelRequested){ mLoading=false; mUpdateSend(); return; }
+    const msg = err.message||'';
+    const isQuota = msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED')||msg.includes('429');
+    if(!isQuota) mHistory.pop();
+    if(isQuota && KEYS.length>1){ GEM_KEY=getNextKey(); mLoading=false; setTimeout(mSendMsg,800); return; }
+    let friendly = '😕 Something went wrong. Please try again!';
+    if(msg.includes('API_KEY_INVALID')||msg.includes('API key')) friendly='🔑 API key problem. Contact your teacher!';
+    else if(isQuota) friendly='⏳ Too many requests! Wait a minute.';
+    else if(msg.includes('SAFETY')) friendly='🛡️ That was blocked. Try rephrasing!';
+    else if(msg.includes('fetch')||msg.includes('Failed to fetch')) friendly='🌐 No internet. Check your WiFi!';
+    mAddBubble('bot', friendly);
+  }
+  mLoading=false; mUpdateSend();
+}
+
+// ── Mobile file upload ────────────────────────
+function mHandleUpload(evt){
+  const file=evt.target.files[0]; if(!file) return;
+  if(file.size>10*1024*1024){alert('File too large (max 10MB).');return;}
+  mUploadedFile=file; mUploadedMimeType=file.type;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    mUploadedDataUrl=e.target.result;
+    document.getElementById('mUploadPreview').style.display='flex';
+    const name=file.name.length>28?file.name.substring(0,26)+'…':file.name;
+    document.getElementById('mUploadName').textContent='📄 '+name;
+  };
+  reader.readAsDataURL(file);
+  evt.target.value='';
+}
+function mClearUpload(){
+  mUploadedFile=null; mUploadedDataUrl=null; mUploadedMimeType=null;
+  document.getElementById('mUploadPreview').style.display='none';
+}
+
+// ── Mobile req pill ────────────────────────────
+function mUpdateReqPill(){
+  const pill = document.getElementById('mReqPill');
+  const rc = document.getElementById('mReqCount');
+  const rem = getRemainingRequests();
+  if(pill) pill.textContent = rem + ' questions left today';
+  if(rc) rc.textContent = rem + ' questions left today';
+}
+
+// ── Mobile diagram ─────────────────────────────
+function mShowDiagramHome(){
+  const out = document.getElementById('mDiagramOutput'); if(!out) return;
+  const grid = DIAGRAM_QUICK.map(d=>
+    `<button class="diagram-quick-btn" onclick="mGenerateDiagram('${d.query}')">
+      <span class="dq-icon">${d.icon}</span>${d.label}
+    </button>`
+  ).join('');
+  out.innerHTML =
+    `<div class="diagram-custom-bar">
+       <input class="diagram-custom-input" id="mDiagramCustomInput"
+         placeholder="Plot y=x², draw heart, digestive system…"
+         onkeydown="if(event.key==='Enter') mDrawCustom()"/>
+       <button class="diagram-custom-go" onclick="mDrawCustom()">🎨 Draw</button>
+     </div>
+     <div class="diagram-section-label">Quick picks</div>
+     <div class="diagram-grid">${grid}</div>`;
+  setTimeout(()=>{ const el=document.getElementById('mDiagramCustomInput');if(el)el.focus();},50);
+}
+
+function mDrawCustom(){
+  const inp = document.getElementById('mDiagramCustomInput');
+  const q = inp ? inp.value.trim() : '';
+  if(!q) return;
+  mGenerateDiagram(q);
+}
+
+async function mGenerateDiagram(query){
+  const out = document.getElementById('mDiagramOutput'); if(!out) return;
+  // Graph
+  if(isGraphRequest(query)){
+    const eqs = parseEquations(query);
+    if(eqs.length>0){ mRenderGraph(query, eqs); return; }
+  }
+  // Built-in SVG
+  const svgKey = getSvgKey(query);
+  if(svgKey){ mRenderSvg(svgKey, query); return; }
+  // AI SVG
+  out.innerHTML=`<div class="canvas-loading"><div style="font-size:28px">🎨</div><div style="font-size:13px;font-weight:600;color:var(--ink)">Drawing ${escHtml(query)}…</div><div style="display:flex;gap:5px"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>`;
+  const prompt=`Create a clear, well-labeled educational SVG diagram of: "${query}"\n- Output ONLY raw SVG starting with <svg and ending with </svg>. No markdown.\n- viewBox="0 0 520 420" xmlns="http://www.w3.org/2000/svg"\n- Font: Arial,sans-serif. Title at top. All parts labeled. Colored filled shapes. Legend at bottom.\n- Accurate for Indian Class 10 students.`;
+  try{
+    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      {method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEM_KEY},
+       body:JSON.stringify({system_instruction:{parts:[{text:'Output ONLY raw SVG. Start with <svg end with </svg>. No markdown.'}]},contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:4000}})});
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e?.error?.message||'HTTP '+resp.status);}
+    const data=await resp.json();
+    let raw=(data?.candidates?.[0]?.content?.parts?.[0]?.text||'').replace(/^```[\w]*\n?/gm,'').replace(/```$/gm,'').trim();
+    if(!raw.startsWith('<svg')) throw new Error('Invalid SVG — try a different topic');
+    out.innerHTML=`<div class="diagram-result"><div class="diagram-result-title">📐 ${escHtml(query)}</div><div style="background:#fff;border-radius:12px;padding:8px;border:1px solid var(--border);overflow:auto">${raw}</div><div class="diagram-actions"><button class="d-action-btn" onclick="mShowDiagramHome()">🏠 Home</button><button class="d-action-btn" onclick="mGenerateDiagram(${JSON.stringify(query)})">🔄 Redraw</button></div></div>`;
+  }catch(e){
+    out.innerHTML=`<div class="diagram-result"><div style="color:var(--red);font-size:13px;margin-bottom:12px">❌ ${escHtml(e.message||'Error')}</div><div style="display:flex;gap:8px"><button class="d-action-btn" onclick="mGenerateDiagram(${JSON.stringify(query)})">🔄 Try Again</button><button class="d-action-btn" onclick="mShowDiagramHome()">🏠 Home</button></div></div>`;
+  }
+}
+
+function mRenderSvg(svgKey, query){
+  const out=document.getElementById('mDiagramOutput');if(!out)return;
+  out.innerHTML=`<div class="diagram-result"><div class="diagram-result-title">📐 ${escHtml(query)}</div><div style="background:#fff;border-radius:12px;padding:8px;border:1px solid var(--border);overflow:auto">${SVG_DIAGRAMS[svgKey]}</div><div class="diagram-actions"><button class="d-action-btn" onclick="mShowDiagramHome()">🏠 Home</button><button class="d-action-btn" onclick="window.print()">🖨️ Print</button></div></div>`;
+}
+
+function mRenderGraph(query, equations){
+  const out=document.getElementById('mDiagramOutput');if(!out)return;
+  // Reuse desktop renderGraph but target mobile output container
+  const tempId='mDiagramOutput';
+  // Swap diagramOutput reference temporarily
+  const origOut=document.getElementById('diagramOutput');
+  // We'll clone renderGraph inline for mobile with correct container
+  const COLORS=['#e8720c','#1a5cb8','#1a7a3c','#c42020','#6b2db8','#d4900a'];
+  const W=Math.min(window.innerWidth-32, 460), H=320, PAD=40;
+  let ymin=-10,ymax=10,xmin=-10,xmax=10;
+  const steps=300;
+  const xs=[]; for(let i=0;i<=steps;i++) xs.push(xmin+(xmax-xmin)*i/steps);
+  let autoYMin=Infinity,autoYMax=-Infinity;
+  for(const eq of equations){
+    if(eq.type!=='y') continue;
+    for(const x of xs){const y=evalExpr(eq.expr,x);if(isFinite(y)){autoYMin=Math.min(autoYMin,y);autoYMax=Math.max(autoYMax,y);}}
+  }
+  if(isFinite(autoYMin)&&isFinite(autoYMax)&&autoYMax>autoYMin){const m=(autoYMax-autoYMin)*0.15||1;ymin=Math.max(-50,autoYMin-m);ymax=Math.min(50,autoYMax+m);}
+  function nr(v){return Math.ceil(Math.abs(v)/5)*5*(v<0?-1:1);}
+  ymin=nr(ymin);ymax=nr(ymax);
+  const toX=x=>PAD+(x-xmin)/(xmax-xmin)*(W-2*PAD);
+  const toY=y=>(H-PAD)-(y-ymin)/(ymax-ymin)*(H-2*PAD);
+  const legendHtml=equations.map((eq,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px"><span style="display:inline-block;width:16px;height:3px;background:${COLORS[i%COLORS.length]};border-radius:2px"></span><span style="font-size:11px;font-weight:600;color:var(--ink2)">${escHtml(eq.type==='x'?`x=${eq.expr}`:`y=${eq.expr}`)}</span></span>`).join('');
+  out.innerHTML=`<div class="diagram-result"><div class="diagram-result-title">📈 ${escHtml(query)}</div><div style="background:#fff;border-radius:12px;padding:10px;border:1px solid var(--border);overflow:auto"><canvas id="mGraphCanvas" width="${W}" height="${H}" style="display:block;max-width:100%"></canvas><div style="padding:6px 4px 2px;display:flex;flex-wrap:wrap">${legendHtml}</div></div><div class="diagram-actions"><button class="d-action-btn" onclick="mShowDiagramHome()">🏠 Home</button></div></div>`;
+  requestAnimationFrame(()=>{
+    const canvas=document.getElementById('mGraphCanvas');if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='#e8e4de';ctx.lineWidth=1;
+    const xSt=(xmax-xmin)/10,ySt=(ymax-ymin)/10;
+    for(let gx=Math.ceil(xmin/xSt)*xSt;gx<=xmax;gx+=xSt){const cx=toX(gx);ctx.beginPath();ctx.moveTo(cx,PAD);ctx.lineTo(cx,H-PAD);ctx.stroke();}
+    for(let gy=Math.ceil(ymin/ySt)*ySt;gy<=ymax;gy+=ySt){const cy=toY(gy);ctx.beginPath();ctx.moveTo(PAD,cy);ctx.lineTo(W-PAD,cy);ctx.stroke();}
+    ctx.strokeStyle='#1c1510';ctx.lineWidth=2;
+    const zy=toY(0),zx=toX(0);
+    if(zy>=PAD&&zy<=H-PAD){ctx.beginPath();ctx.moveTo(PAD,zy);ctx.lineTo(W-PAD,zy);ctx.stroke();ctx.beginPath();ctx.moveTo(W-PAD,zy);ctx.lineTo(W-PAD-7,zy-3);ctx.lineTo(W-PAD-7,zy+3);ctx.closePath();ctx.fillStyle='#1c1510';ctx.fill();}
+    if(zx>=PAD&&zx<=W-PAD){ctx.beginPath();ctx.moveTo(zx,H-PAD);ctx.lineTo(zx,PAD);ctx.stroke();ctx.beginPath();ctx.moveTo(zx,PAD);ctx.lineTo(zx-3,PAD+7);ctx.lineTo(zx+3,PAD+7);ctx.closePath();ctx.fill();}
+    ctx.fillStyle='#6b5a48';ctx.font='10px Arial';ctx.textAlign='center';
+    for(let gx=Math.ceil(xmin);gx<=xmax;gx++){if(!gx)continue;const cx=toX(gx);if(cx<PAD+3||cx>W-PAD-3)continue;ctx.fillText(gx,cx,zy>=PAD&&zy<=H-PAD?zy+13:H-PAD+13);}
+    ctx.textAlign='right';
+    for(let gy=Math.ceil(ymin);gy<=ymax;gy++){if(!gy)continue;const cy=toY(gy);if(cy<PAD+3||cy>H-PAD-3)continue;ctx.fillText(gy,zx>=PAD&&zx<=W-PAD?zx-5:PAD-5,cy+4);}
+    equations.forEach((eq,ei)=>{
+      const col=COLORS[ei%COLORS.length];
+      ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.lineJoin='round';
+      if(eq.type==='x'){const v=evalExpr(eq.expr,0);if(isFinite(v)){const cx=toX(v);ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(cx,PAD);ctx.lineTo(cx,H-PAD);ctx.stroke();ctx.setLineDash([]);}}
+      else{ctx.beginPath();let pen=false;const N=500;for(let i=0;i<=N;i++){const x=xmin+(xmax-xmin)*i/N,y=evalExpr(eq.expr,x),cx=toX(x),cy=toY(y);if(!isFinite(y)||cy<PAD-10||cy>H-PAD+10){pen=false;continue;}if(!pen){ctx.moveTo(cx,cy);pen=true;}else ctx.lineTo(cx,cy);}ctx.stroke();}
+    });
+  });
+}
+
+// ── Mobile init — called from initApp ─────────
+function initMobile(){
+  if(!IS_MOBILE()) return;
+  // Sync name/theme
+  document.getElementById('mStudentName').textContent = STU_NAME;
+  document.getElementById('mUserAv').textContent = STU_NAME.charAt(0).toUpperCase();
+  const t=localStorage.getItem('vidya_theme')||'light';
+  document.getElementById('mThemeBtn').textContent = t==='dark'?'☀️':'🌙';
+  mUpdateReqPill();
+  mobileShowScreen('home');
+}
+
+// Patch toggleTheme to also update mobile button
+const _origToggleTheme=toggleTheme;
+toggleTheme=function(){
+  _origToggleTheme();
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const mb=document.getElementById('mThemeBtn');if(mb)mb.textContent=isDark?'☀️':'🌙';
+};
+
+// Patch voice status to update mobile indicator too
+const _origSetVoiceStatus=setVoiceStatus;
+setVoiceStatus=function(msg){
+  _origSetVoiceStatus(msg);
+  const mvi=document.getElementById('mVoiceStatusInline');
+  if(mvi){mvi.textContent=msg;mvi.style.display=msg?'inline-flex':'none';}
+};
+
+// Patch initApp to also init mobile
+const _origInitApp=initApp;
+initApp=function(){
+  _origInitApp();
+  initMobile();
+};
 </script>
 </body>
 </html>
